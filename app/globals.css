@@ -1,0 +1,236 @@
+:root {
+  /* Houzz-inspired Color Palette */
+  --background: #FFFFFF;
+  --background-warm: #F9F7F4;
+  --foreground: #3D3D3D;
+  --foreground-dark: #2A2A2A;
+
+  /* Houzz Green - Primary Brand Color (Darker) */
+  --primary: #3d8f11;
+  --primary-dark: #2d7a0a;
+  --primary-light: #e8f5e0;
+  --primary-rgb: 61, 143, 17;
+
+  /* Warm Neutrals */
+  --secondary: #6B6B6B;
+  --accent: #F5F3EE;
+  --cream: #FAF8F5;
+  --warm-gray: #E8E6E1;
+
+  /* Card & UI Elements */
+  --card-bg: #FFFFFF;
+  --card-hover: #FDFCFA;
+  --border-color: #D8D6D0;
+  --border-light: #EEECE7;
+  --text-muted: #767676;
+  --text-subtle: #999999;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 2px 8px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 4px 16px rgba(0, 0, 0, 0.1);
+  --shadow-hover: 0 6px 20px rgba(0, 0, 0, 0.12);
+
+  /* Typography */
+  --font-sans: "proxima-nova", -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Helvetica Neue', Arial, sans-serif;
+  --font-serif: Georgia, 'Times New Roman', Times, serif;
+}
+
+* {
+  box-sizing: border-box;
+  padding: 0;
+  margin: 0;
+}
+
+html,
+body {
+  max-width: 100vw;
+  overflow-x: hidden;
+}
+
+body {
+  background-color: var(--background-warm);
+  color: var(--foreground);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  line-height: 1.6;
+  font-size: 15px;
+}
+
+/* Refined Typography Hierarchy - Houzz Style */
+h1,
+h2,
+h3 {
+  font-family: var(--font-serif);
+  color: var(--foreground-dark);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  line-height: 1.2;
+}
+
+h4,
+h5,
+h6 {
+  font-family: var(--font-sans);
+  font-weight: 600;
+  letter-spacing: -0.01em;
+  color: var(--foreground);
+}
+
+h1 {
+  font-size: 2.5rem;
+  font-weight: 500;
+}
+
+h2 {
+  font-size: 1.75rem;
+  font-weight: 500;
+}
+
+h3 {
+  font-size: 1.25rem;
+}
+
+/* Utilities */
+.container {
+  max-width: 100%;
+  margin: 0 auto;
+  padding: 0 1.5rem;
+}
+
+@media (max-width: 768px) {
+  .container {
+    padding: 0 1rem;
+  }
+}
+
+.photo-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(465px, 1fr));
+  gap: 1rem;
+}
+
+@media (max-width: 600px) {
+  .photo-grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}
+
+.card-image-container {
+  position: relative;
+  height: 450px;
+  width: 100%;
+  background: #f5f5f5;
+  overflow: hidden;
+}
+
+.skeleton-card {
+  height: 550px;
+}
+
+@media (max-width: 600px) {
+  .card-image-container {
+    height: 220px;
+  }
+
+  .skeleton-card {
+    height: 320px;
+    /* 220px image + 100px metadata */
+  }
+}
+
+/* Refined Card Component - Houzz Style */
+.glass {
+  background: var(--card-bg);
+  border: 1px solid var(--border-light);
+  box-shadow: var(--shadow-sm);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass:hover {
+  box-shadow: var(--shadow-hover);
+  background: var(--card-hover);
+  border-color: var(--border-color);
+  transform: translateY(-2px);
+}
+
+/* Professional Button System - Houzz Style */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0.75rem 1.5rem;
+  border-radius: 2px;
+  font-weight: 600;
+  font-size: 0.9375rem;
+  font-family: var(--font-sans);
+  letter-spacing: 0.01em;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  cursor: pointer;
+  border: 1px solid var(--border-color);
+  background: white;
+  color: var(--foreground);
+  text-decoration: none;
+}
+
+.btn:hover {
+  background: var(--accent);
+  border-color: var(--secondary);
+  transform: translateY(-1px);
+  box-shadow: var(--shadow-sm);
+}
+
+.btn:active {
+  transform: translateY(0);
+  box-shadow: none;
+}
+
+.btn-primary {
+  background: var(--primary);
+  color: white;
+  border-color: var(--primary);
+  box-shadow: 0 2px 4px rgba(var(--primary-rgb), 0.2);
+}
+
+.btn-primary:hover {
+  background: var(--primary-dark);
+  border-color: var(--primary-dark);
+  box-shadow: 0 4px 8px rgba(var(--primary-rgb), 0.25);
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pulse-glow {
+
+  0%,
+  100% {
+    opacity: 0.6;
+  }
+
+  50% {
+    opacity: 1;
+  }
+}
+
+@keyframes shim {
+  0% {
+    background-position: -1000px 0;
+  }
+
+  100% {
+    background-position: 1000px 0;
+  }
+}
