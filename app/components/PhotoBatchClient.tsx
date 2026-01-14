@@ -19,9 +19,10 @@
 
 'use client';
 
-import { useEffect } from 'react';
+import React, { useEffect } from 'react';
 import { Item } from '@/lib/data';
 import { PhotoCard } from './PhotoCard';
+import { ProCTACard } from './ProCTACard';
 import { usePhotoGalleryActions } from './PhotoGallery';
 
 /**
@@ -42,6 +43,9 @@ interface PhotoBatchClientProps {
 
     /** Simulated network latency in milliseconds (displayed for demo purposes) */
     delay: number;
+
+    /** Whether to show the Pro CTA card in this batch (after 3rd photo) */
+    showCTACard?: boolean;
 }
 
 /**
@@ -67,7 +71,7 @@ interface PhotoBatchClientProps {
  *   initialData={false}
  * />
  */
-export function PhotoBatchClient({ data, offset, limit, initialData, delay }: PhotoBatchClientProps) {
+export function PhotoBatchClient({ data, offset, limit, initialData, delay, showCTACard = false }: PhotoBatchClientProps) {
     // Optimization: Use actions-only hook to avoid re-rendering when 'photos' state changes
     const { registerPhotos, openPhoto } = usePhotoGalleryActions();
 
@@ -112,15 +116,18 @@ export function PhotoBatchClient({ data, offset, limit, initialData, delay }: Ph
             style={{ display: 'contents' }}
         >
             {data.map((item, localIndex) => (
-                <PhotoCard
-                    key={item.id}
-                    item={item}
-                    index={localIndex}
-                    // Prioritize loading for the first 4 images of the first batch (LCP optimization)
-                    priority={initialData && localIndex < 4}
-                    // Direct onClick - bypasses event delegation for reliability
-                    onClick={(photo) => handlePhotoClick(photo, localIndex)}
-                />
+                <React.Fragment key={item.id}>
+                    {/* Insert CTA card after 3rd photo (index 3) */}
+                    {showCTACard && localIndex === 3 && <ProCTACard />}
+                    <PhotoCard
+                        item={item}
+                        index={localIndex}
+                        // Prioritize loading for the first 4 images of the first batch (LCP optimization)
+                        priority={initialData && localIndex < 4}
+                        // Direct onClick - bypasses event delegation for reliability
+                        onClick={(photo) => handlePhotoClick(photo, localIndex)}
+                    />
+                </React.Fragment>
             ))}
         </div>
     );

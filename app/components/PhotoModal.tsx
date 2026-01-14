@@ -47,6 +47,9 @@ interface PhotoModalProps {
 
     /** Callback to navigate to the previous photo */
     onPrevious: () => void;
+
+    /** Whether more photos are being loaded */
+    isLoadingMore?: boolean;
 }
 
 /**
@@ -126,7 +129,7 @@ interface FullPhotoDetails extends Item {
 // ... imports
 import { ContactPane } from './ContactPane';
 
-export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, onPrevious }: PhotoModalProps) {
+export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, onPrevious, isLoadingMore = false }: PhotoModalProps) {
     /**
      * State: Full photo details
      * Starts with grid data (optimistic), then enriched with API data
@@ -185,14 +188,15 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
          */
         const fetchDetails = async () => {
             try {
-                // Fetch details and latest conversation in parallel
-                const [photoDetails, conversationData] = await Promise.all([
-                    api.photos.get(photo.id),
-                    api.contact.latest(photo.id)
-                ]);
-
+                // First fetch photo details to get professional ID
+                const photoDetails = await api.photos.get(photo.id);
                 setFullDetails(photoDetails);
-                setResumeConversation(conversationData.conversation);
+
+                // Then fetch latest conversation using professional ID (if professional exists)
+                if (photoDetails.professional?.id) {
+                    const conversationData = await api.contact.latest(photoDetails.professional.id);
+                    setResumeConversation(conversationData.conversation);
+                }
             } catch (error) {
                 console.error("Failed to load photo details", error);
             } finally {
@@ -257,7 +261,7 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
      * Derived values for navigation and display
      */
     const isFirst = currentIndex === 0; // Disable previous button on first photo
-    const isLast = currentIndex >= totalPhotos - 1; // Disable next button on last photo
+    const isLast = currentIndex >= totalPhotos - 1 && !isLoadingMore; // Disable next button on last photo (unless loading more)
 
     return (
         <div
@@ -363,6 +367,7 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
                     <button
                         onClick={onNext}
                         aria-label="Next photo"
+                        disabled={isLoadingMore}
                         style={{
                             position: 'absolute',
                             right: '1.5rem',
@@ -374,7 +379,7 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
                             background: 'rgba(255, 255, 255, 0.95)',
                             backdropFilter: 'blur(8px)',
                             border: '1px solid rgba(0, 0, 0, 0.08)',
-                            cursor: 'pointer',
+                            cursor: isLoadingMore ? 'wait' : 'pointer',
                             display: 'flex',
                             alignItems: 'center',
                             justifyContent: 'center',
@@ -385,9 +390,11 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
                             zIndex: 10,
                         }}
                         onMouseEnter={(e) => {
-                            e.currentTarget.style.background = 'white';
-                            e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
-                            e.currentTarget.style.transform = 'translateY(-50%) translateX(2px)';
+                            if (!isLoadingMore) {
+                                e.currentTarget.style.background = 'white';
+                                e.currentTarget.style.boxShadow = 'var(--shadow-lg)';
+                                e.currentTarget.style.transform = 'translateY(-50%) translateX(2px)';
+                            }
                         }}
                         onMouseLeave={(e) => {
                             e.currentTarget.style.background = 'rgba(255, 255, 255, 0.95)';
@@ -395,9 +402,54 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
                             e.currentTarget.style.transform = 'translateY(-50%)';
                         }}
                     >
-                        ›
+                        {isLoadingMore ? (
+                            <span style={{
+                                width: '20px',
+                                height: '20px',
+                                border: '2px solid #e0e0e0',
+                                borderTopColor: 'var(--primary)',
+                                borderRadius: '50%',
+                                animation: 'spin 0.8s linear infinite',
+                            }} />
+                        ) : '›'}
                     </button>
                 )}
+
+                {/* Loading indicator when at last photo */}
+                {isLoadingMore && currentIndex === totalPhotos - 1 && (
+                    <div style={{
+                        position: 'absolute',
+                        bottom: '2rem',
+                        left: '50%',
+                        transform: 'translateX(-50%)',
+                        background: 'rgba(0, 0, 0, 0.7)',
+                        color: 'white',
+                        padding: '0.75rem 1.5rem',
+                        borderRadius: '4px',
+                        fontSize: '0.875rem',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.5rem',
+                        zIndex: 10,
+                    }}>
+                        <span style={{
+                            width: '16px',
+                            height: '16px',
+                            border: '2px solid rgba(255,255,255,0.3)',
+                            borderTopColor: 'white',
+                            borderRadius: '50%',
+                            animation: 'spin 0.8s linear infinite',
+                        }} />
+                        Loading more photos...
+                    </div>
+                )}
+
+                {/* Spinner animation */}
+                <style jsx global>{`
+                    @keyframes spin {
+                        to { transform: rotate(360deg); }
+                    }
+                `}</style>
             </div>
 
             {/* Right Sidebar - Photo Details and Actions */}
@@ -443,7 +495,6 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
                 {showContact && fullDetails?.professional ? (
                     // Contact form view - shown when user clicks "Contact Professional"
                     <ContactPane
-                        photoId={photo.id}
                         professional={fullDetails.professional}
                         onBack={() => {
                             setShowContact(false);

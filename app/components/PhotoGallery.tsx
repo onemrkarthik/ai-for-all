@@ -10,6 +10,7 @@
  * - Modal view with keyboard navigation (Arrow keys and Escape)
  * - Prevents duplicate registration of photos using a ref-based tracking system
  * - Supports progressive photo loading as new batches stream in
+ * - Auto-loads next page when viewing the last photo
  *
  * Architecture:
  * Uses React Context API to provide gallery state and actions to all child components.
@@ -23,7 +24,7 @@
 
 'use client';
 
-import { useState, ReactNode, createContext, useContext, useCallback, useRef, useMemo } from 'react';
+import { useState, ReactNode, createContext, useContext, useCallback, useRef, useMemo, useEffect } from 'react';
 import { Item } from '@/lib/data';
 import { PhotoModal } from './PhotoModal';
 
@@ -35,6 +36,8 @@ interface PhotoGalleryState {
     currentIndex: number | null;
     currentPhoto: Item | null;
     totalPhotos: number;
+    isLoadingMore: boolean;
+    hasLoadedMore: boolean;
 }
 
 /**
@@ -47,6 +50,8 @@ interface PhotoGalleryActions {
     goToNext: () => void;
     goToPrevious: () => void;
     closeModal: () => void;
+    setOnLoadMore: (callback: (() => Promise<Item[]>) | null) => void;
+    setOnModalClose: (callback: ((hasLoadedMore: boolean) => void) | null) => void;
 }
 
 // Split contexts
@@ -55,6 +60,8 @@ const PhotoGalleryStateContext = createContext<PhotoGalleryState>({
     currentIndex: null,
     currentPhoto: null,
     totalPhotos: 0,
+    isLoadingMore: false,
+    hasLoadedMore: false,
 });
 
 const PhotoGalleryActionsContext = createContext<PhotoGalleryActions>({
@@ -64,6 +71,8 @@ const PhotoGalleryActionsContext = createContext<PhotoGalleryActions>({
     goToNext: () => { },
     goToPrevious: () => { },
     closeModal: () => { },
+    setOnLoadMore: () => { },
+    setOnModalClose: () => { },
 });
 
 /**
@@ -81,13 +90,20 @@ export function PhotoGalleryProvider({ children }: { children: ReactNode }) {
     const [currentIndex, setCurrentIndex] = useState<number | null>(null);
     // Explicitly opened photo - used to guarantee correct photo on initial click
     const [explicitPhoto, setExplicitPhoto] = useState<Item | null>(null);
+    const [isLoadingMore, setIsLoadingMore] = useState(false);
+    const [hasLoadedMore, setHasLoadedMore] = useState(false);
+
+    // Refs for callbacks (to avoid re-renders when callbacks change)
+    const onLoadMoreRef = useRef<(() => Promise<Item[]>) | null>(null);
+    const onModalCloseRef = useRef<((hasLoadedMore: boolean) => void) | null>(null);
+    const loadingMoreRef = useRef(false);
 
     // Derived state - use explicit photo if available, otherwise lookup from array
-    const currentPhoto = currentIndex !== null 
-        ? (explicitPhoto || photos[currentIndex]) 
+    const currentPhoto = currentIndex !== null
+        ? (explicitPhoto || photos[currentIndex])
         : null;
     const totalPhotos = photos.length;
-    
+
     // Debug logging
     if (currentIndex !== null) {
         console.log('[PhotoGallery] currentPhoto derivation:', {
@@ -98,6 +114,48 @@ export function PhotoGalleryProvider({ children }: { children: ReactNode }) {
             resultPhotoId: currentPhoto?.id
         });
     }
+
+    // Effect to load more photos when viewing the last photo
+    useEffect(() => {
+        const checkAndLoadMore = async () => {
+            // Check if we're at the last photo and have a callback
+            if (
+                currentIndex !== null &&
+                currentIndex >= photos.length - 1 &&
+                photos.length > 0 &&
+                onLoadMoreRef.current &&
+                !loadingMoreRef.current
+            ) {
+                console.log('[PhotoGallery] At last photo, loading more...');
+                loadingMoreRef.current = true;
+                setIsLoadingMore(true);
+
+                try {
+                    const newPhotos = await onLoadMoreRef.current();
+                    if (newPhotos && newPhotos.length > 0) {
+                        // Register the new photos at the end
+                        setPhotos(prevPhotos => {
+                            const updatedPhotos = [...prevPhotos];
+                            newPhotos.forEach((photo, idx) => {
+                                const globalIndex = prevPhotos.length + idx;
+                                updatedPhotos[globalIndex] = photo;
+                            });
+                            console.log(`[PhotoGallery] Loaded ${newPhotos.length} more photos. Total: ${updatedPhotos.length}`);
+                            return updatedPhotos;
+                        });
+                        setHasLoadedMore(true);
+                    }
+                } catch (error) {
+                    console.error('[PhotoGallery] Failed to load more photos:', error);
+                } finally {
+                    setIsLoadingMore(false);
+                    loadingMoreRef.current = false;
+                }
+            }
+        };
+
+        checkAndLoadMore();
+    }, [currentIndex, photos.length]);
 
     // Actions - Wrapped in useCallback
     const registerPhotos = useCallback((newPhotos: Item[], startIndex: number) => {
@@ -160,8 +218,22 @@ export function PhotoGalleryProvider({ children }: { children: ReactNode }) {
     }, []);
 
     const closeModal = useCallback(() => {
+        // Call the onModalClose callback with whether more photos were loaded
+        if (onModalCloseRef.current) {
+            onModalCloseRef.current(hasLoadedMore);
+        }
+
         setExplicitPhoto(null); // Clear explicit photo
         setCurrentIndex(null);
+        setHasLoadedMore(false); // Reset for next modal open
+    }, [hasLoadedMore]);
+
+    const setOnLoadMore = useCallback((callback: (() => Promise<Item[]>) | null) => {
+        onLoadMoreRef.current = callback;
+    }, []);
+
+    const setOnModalClose = useCallback((callback: ((hasLoadedMore: boolean) => void) | null) => {
+        onModalCloseRef.current = callback;
     }, []);
 
     // Stable actions object (never changes unless callbacks change)
@@ -174,7 +246,9 @@ export function PhotoGalleryProvider({ children }: { children: ReactNode }) {
         goToNext,
         goToPrevious,
         closeModal,
-    }), [registerPhotos, openPhotoAtIndex, openPhoto, goToNext, goToPrevious, closeModal]);
+        setOnLoadMore,
+        setOnModalClose,
+    }), [registerPhotos, openPhotoAtIndex, openPhoto, goToNext, goToPrevious, closeModal, setOnLoadMore, setOnModalClose]);
 
     // State object (changes whenever photos or index changes)
     const state = useMemo(() => ({
@@ -182,7 +256,9 @@ export function PhotoGalleryProvider({ children }: { children: ReactNode }) {
         currentIndex,
         currentPhoto,
         totalPhotos,
-    }), [photos, currentIndex, currentPhoto, totalPhotos]);
+        isLoadingMore,
+        hasLoadedMore,
+    }), [photos, currentIndex, currentPhoto, totalPhotos, isLoadingMore, hasLoadedMore]);
 
     return (
         <PhotoGalleryActionsContext.Provider value={actions}>
@@ -195,6 +271,7 @@ export function PhotoGalleryProvider({ children }: { children: ReactNode }) {
                     onClose={closeModal}
                     onNext={goToNext}
                     onPrevious={goToPrevious}
+                    isLoadingMore={isLoadingMore}
                 />
             </PhotoGalleryStateContext.Provider>
         </PhotoGalleryActionsContext.Provider>
