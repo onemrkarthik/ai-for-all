@@ -20,6 +20,8 @@
 
 import type { Metadata } from "next";
 import "./globals.css";
+import Header from "./components/Header";
+import Footer from "./components/Footer";
 
 /**
  * Application metadata for SEO and social sharing
@@ -52,8 +54,12 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body>
-        {children}
+      <body style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
+        <Header />
+        <div style={{ flex: 1 }}>
+          {children}
+        </div>
+        <Footer />
       </body>
     </html>
   );

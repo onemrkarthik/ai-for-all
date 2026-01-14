@@ -38,7 +38,6 @@ export interface ProfessionalDetails {
  * Request body for initializing a conversation
  */
 export interface ContactInitRequest {
-  photoId: number;
   professionalId: number;
   message: string;
 }
@@ -48,7 +47,6 @@ export interface ContactInitRequest {
  */
 export interface ContactInitResponse {
   id: number;
-  photo_id: number;
   professional_id: number;
   last_summary?: string;
   last_viewed_at?: string;

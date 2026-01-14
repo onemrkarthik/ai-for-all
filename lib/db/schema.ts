@@ -118,6 +118,7 @@ export const schema: Record<string, TableDefinition> = {
    * Conversations
    *
    * Chat conversations between users and professionals (via AI assistant).
+   * Conversations are tied to a professional, not to a specific photo.
    */
   conversations: {
     name: 'conversations',
@@ -125,13 +126,11 @@ export const schema: Record<string, TableDefinition> = {
     sql: `
       CREATE TABLE IF NOT EXISTS conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        photo_id INTEGER NOT NULL,
-        professional_id INTEGER,
+        professional_id INTEGER NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_summary TEXT,
         last_viewed_at DATETIME,
-        FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE,
-        FOREIGN KEY (professional_id) REFERENCES professionals(id) ON DELETE SET NULL
+        FOREIGN KEY (professional_id) REFERENCES professionals(id) ON DELETE CASCADE
       )
     `,
   },
@@ -256,9 +255,9 @@ export const schemaDocumentation = {
       relationships: ['professionals (many-to-one)'],
     },
     conversations: {
-      purpose: 'AI chat conversations about kitchen projects',
+      purpose: 'AI chat conversations with professionals',
       rowCount: 'Variable (user-generated)',
-      relationships: ['photos (many-to-one)', 'professionals (many-to-one)', 'messages (one-to-many)'],
+      relationships: ['professionals (many-to-one)', 'messages (one-to-many)'],
     },
     messages: {
       purpose: 'Individual chat messages (user and AI assistant)',
@@ -271,7 +270,7 @@ export const schemaDocumentation = {
       'CREATE INDEX idx_photo_attributes_photo_id ON photo_attributes(photo_id)',
       'CREATE INDEX idx_messages_conversation_id ON messages(conversation_id)',
       'CREATE INDEX idx_reviews_professional_id ON reviews(professional_id)',
-      'CREATE INDEX idx_conversations_photo_id ON conversations(photo_id)',
+      'CREATE INDEX idx_conversations_professional_id ON conversations(professional_id)',
     ],
   },
 };

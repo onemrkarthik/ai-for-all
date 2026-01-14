@@ -93,13 +93,13 @@ export const routes = {
    */
   contact: {
     /**
-     * Get latest conversation for a photo
-     * GET /api/contact/latest?photoId=X
+     * Get latest conversation for a professional
+     * GET /api/contact/latest?professionalId=X
      */
     latest: {
       path: '/api/contact/latest',
       method: 'GET',
-      queryParams: {} as { photoId: number },
+      queryParams: {} as { professionalId: number },
       response: {} as ConversationResponse,
     } satisfies RouteConfig,
 

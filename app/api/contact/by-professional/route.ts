@@ -41,7 +41,6 @@ export async function GET(request: NextRequest) {
         return NextResponse.json({
             conversation: {
                 id: conversation.id,
-                photo_id: conversation.photo_id,
                 professional_id: conversation.professional_id,
                 last_summary: conversation.last_summary,
                 last_viewed_at: conversation.last_viewed_at,

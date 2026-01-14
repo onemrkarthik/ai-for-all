@@ -1,16 +1,16 @@
 import { NextResponse } from 'next/server';
-import { getLatestConversationByPhotoId } from '@/lib/services/chat';
+import { getLatestConversationByProfessionalId } from '@/lib/services/chat';
 
 export async function GET(request: Request) {
     try {
         const { searchParams } = new URL(request.url);
-        const photoId = searchParams.get('photoId');
+        const professionalId = searchParams.get('professionalId');
 
-        if (!photoId) {
-            return NextResponse.json({ error: 'Missing photoId' }, { status: 400 });
+        if (!professionalId) {
+            return NextResponse.json({ error: 'Missing professionalId' }, { status: 400 });
         }
 
-        const conversation = getLatestConversationByPhotoId(parseInt(photoId, 10));
+        const conversation = getLatestConversationByProfessionalId(parseInt(professionalId, 10));
 
         if (!conversation) {
             return NextResponse.json({ conversation: null });

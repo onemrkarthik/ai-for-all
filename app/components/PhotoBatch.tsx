@@ -37,6 +37,9 @@ interface PhotoBatchProps {
 
     /** Optional pre-fetched data for SSR scenarios */
     initialData?: Item[];
+
+    /** Whether to show the Pro CTA card in this batch */
+    showCTACard?: boolean;
 }
 
 /**
@@ -60,7 +63,7 @@ interface PhotoBatchProps {
  *   <PhotoBatch batchId={2} offset={20} limit={20} delay={2000} />
  * </Suspense>
  */
-export async function PhotoBatch({ batchId, offset, limit, delay, initialData }: PhotoBatchProps) {
+export async function PhotoBatch({ batchId, offset, limit, delay, initialData, showCTACard = false }: PhotoBatchProps) {
     // Use pre-fetched data if available (SSR), otherwise fetch on-demand (streaming)
     const data = initialData || await fetchLiveStreamData(offset, limit, delay);
 
@@ -71,6 +74,7 @@ export async function PhotoBatch({ batchId, offset, limit, delay, initialData }:
             limit={limit}
             delay={delay}
             initialData={!!initialData}
+            showCTACard={showCTACard}
         />
     );
 }

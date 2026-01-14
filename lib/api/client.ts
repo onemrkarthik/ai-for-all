@@ -189,24 +189,24 @@ export const api = {
    */
   contact: {
     /**
-     * Get latest conversation for a photo
+     * Get latest conversation for a professional
      *
-     * Returns the most recent conversation related to a specific photo.
+     * Returns the most recent conversation with a specific professional.
      *
-     * @param photoId - Photo ID
+     * @param professionalId - Professional ID
      * @returns Conversation or null if none exists
      *
      * @example
      * ```ts
-     * const { conversation } = await api.contact.latest(123);
+     * const { conversation } = await api.contact.latest(5);
      * if (conversation) {
      *   console.log('Found existing conversation:', conversation.messages);
      * }
      * ```
      */
-    latest: async (photoId: number) => {
+    latest: async (professionalId: number) => {
       const url = buildUrl(routes.contact.latest, {
-        queryParams: { photoId },
+        queryParams: { professionalId },
       });
       return apiFetch<typeof routes.contact.latest.response>(url);
     },
@@ -254,11 +254,10 @@ export const api = {
     /**
      * Initialize a new conversation
      *
-     * Starts a new conversation with a professional about a photo.
+     * Starts a new conversation with a professional.
      * The AI will respond automatically based on the initial message.
      *
      * @param body - Request payload
-     * @param body.photoId - Photo being discussed
      * @param body.professionalId - Professional to contact
      * @param body.message - Initial message from user
      * @returns New conversation with AI response
@@ -266,9 +265,8 @@ export const api = {
      * @example
      * ```ts
      * const conversation = await api.contact.init({
-     *   photoId: 123,
      *   professionalId: 5,
-     *   message: "I'm interested in remodeling my kitchen like this!"
+     *   message: "I'm interested in a kitchen remodel!"
      * });
      * console.log('AI said:', conversation.messages[1].content);
      * ```

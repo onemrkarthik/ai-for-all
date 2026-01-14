@@ -5,19 +5,38 @@ import { Photo } from "./services/photos";
 const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY || "");
 const model = genAI.getGenerativeModel({ model: "gemini-2.0-flash" });
 
+interface Professional {
+    id: number;
+    name: string;
+    company: string;
+    averageRating?: number;
+    reviewCount?: number;
+}
+
 /**
- * Generates a system prompt based on the professional persona and photo context.
+ * Generates a system prompt based on the professional persona.
+ * Photo context is optional - if provided, can reference specific work.
  */
-function getSystemPrompt(photo: Photo): string {
-    const attributeStr = photo.attributes?.map(a => `${a.label}: ${a.value}`).join(", ") || "No specific attributes listed.";
-
-    return `You are a helpful AI assistant for "${photo.professional?.company}". You are helping a client who is interested in the work of ${photo.professional?.name}.
-Your job is to assist with initial inquiries regarding a specific photo from their gallery.
-
-PHOTO CONTEXT:
+function getSystemPrompt(professional: Professional, photo?: Photo | null): string {
+    let photoContext = "";
+    if (photo) {
+        const attributeStr = photo.attributes?.map(a => `${a.label}: ${a.value}`).join(", ") || "No specific attributes listed.";
+        photoContext = `
+REFERENCE PHOTO (optional context):
 - Title: ${photo.title}
 - Description: ${photo.description || "A high-quality kitchen design."}
 - Attributes: ${attributeStr}
+`;
+    }
+
+    return `You are a helpful AI assistant for "${professional.company}". You are helping a client who is interested in the work of ${professional.name}.
+Your job is to assist with initial inquiries and help potential clients explore working with this professional.
+
+PROFESSIONAL INFO:
+- Name: ${professional.name}
+- Company: ${professional.company}
+${professional.averageRating ? `- Rating: ${professional.averageRating.toFixed(1)} stars (${professional.reviewCount} reviews)` : ''}
+${photoContext}
 
 YOUR GOAL:
 1. Help the client refine their vision for a kitchen remodel by following a **Breadth -> Iterative Depth** strategy.
@@ -26,13 +45,13 @@ YOUR GOAL:
 
 STRATEGY:
 - **Phase 1 (Breadth)**: First, briefly touch on all major aspects (General Scope, Estimated Budget, and Timeline). Do not go deep yet.
-- **Phase 2 (Iterative Depth)**: Once you have a broad idea, build on it by asking introductory questions for specific facets (e.g., "Tell me about your cabinetry ideas"). 
+- **Phase 2 (Iterative Depth)**: Once you have a broad idea, build on it by asking introductory questions for specific facets (e.g., "Tell me about your cabinetry ideas").
 - Only dive into deep specifics (materials, brands, layout nuances) once the general direction for that facet is understood.
 
 CONVERSATION STYLE:
 - **Concise**: Keep responses under 3 sentences.
 - **One at a time**: Never ask more than one question in a single response.
-- **Natural**: Avoid repeating the "PHOTO CONTEXT" title verbatim in your questions (e.g., instead of "Tell me about Modern Kitchen Design #1", say "Tell me more about your vision for this style").
+- **Natural**: Reference the professional's expertise and portfolio naturally.
 - **Summary**: Periodically providing a very brief summary of what you've learned so far.
 
 FORMATTING:
@@ -56,17 +75,17 @@ GUIDELINES FOR SUGGESTIONS:
 2. **Budget**: A specific dollar range or level of investment.
 3. **Timeline**: When they want to start or complete the project.
 
-**Project Summary**: ALWAYS populate "projectSummary" with a professional HTML-formatted brief reflecting the CURRENT state of what you've learned. If information is missing (e.g., budget), state "To be determined". 
+**Project Summary**: ALWAYS populate "projectSummary" with a professional HTML-formatted brief reflecting the CURRENT state of what you've learned. If information is missing (e.g., budget), state "To be determined".
 Use standard HTML tags like <h4>, <ul>, <li>, <strong> etc. for a clean, professional look. Do not include <html> or <body> tags. Include:
 - **Project Overview**: A high-level description.
 - **Key Requirements**: A list of scope details.
 - **Budget & Timeline**: Current stated ranges or "TBD".
 - **Style Notes**: Any preferences mentioned.
 
-Be helpful and specific to the photo provided. If they ask about the style or materials in the photo, provide expert insights based on the description and attributes.`;
+Be helpful and provide expert insights about kitchen design based on the professional's expertise.`;
 }
 
-export async function generateAIResponse(photo: Photo, history: ChatMessage[]) {
+export async function generateAIResponse(photo: Photo | null, history: ChatMessage[], professional?: Professional) {
     if (!process.env.GOOGLE_API_KEY) {
         console.error("GOOGLE_API_KEY is missing");
         return {
@@ -75,8 +94,17 @@ export async function generateAIResponse(photo: Photo, history: ChatMessage[]) {
         };
     }
 
+    // Build professional context - use from photo if not provided directly
+    const prof: Professional = professional || {
+        id: photo?.professional?.id || 0,
+        name: photo?.professional?.name || "Design Professional",
+        company: photo?.professional?.company || "Design Studio",
+        averageRating: photo?.professional?.averageRating,
+        reviewCount: photo?.professional?.reviewCount,
+    };
+
     try {
-        const systemPrompt = getSystemPrompt(photo);
+        const systemPrompt = getSystemPrompt(prof, photo);
 
         // Convert history to Gemini format
         const chatHistory = history.map(msg => ({

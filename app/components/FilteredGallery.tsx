@@ -1,13 +1,18 @@
 'use client';
 
-import { useState, useCallback, useEffect, ReactNode } from 'react';
+import React, { useState, useCallback, ReactNode } from 'react';
 import { FilterBar, FilterValues, KITCHEN_FILTERS } from './FilterBar';
 import { PhotoCard } from './PhotoCard';
+import { ProCTACard } from './ProCTACard';
 import { Item } from '@/lib/data';
 import { usePhotoGalleryActions } from './PhotoGallery';
 
+const ITEMS_PER_PAGE = 30;
+
 interface FilteredGalleryProps {
     children: ReactNode;
+    totalCount?: number;
+    currentPage?: number;
 }
 
 interface FeedResponse {
@@ -17,39 +22,32 @@ interface FeedResponse {
     limit: number;
 }
 
-export function FilteredGallery({ children }: FilteredGalleryProps) {
+export function FilteredGallery({ children, totalCount: initialTotalCount = 100, currentPage = 1 }: FilteredGalleryProps) {
     const [activeFilters, setActiveFilters] = useState<FilterValues>({});
     const [filteredPhotos, setFilteredPhotos] = useState<Item[] | null>(null);
-    const [totalCount, setTotalCount] = useState<number | null>(null);
+    const [filteredTotalCount, setFilteredTotalCount] = useState<number | null>(null);
+    const [filteredPage, setFilteredPage] = useState(1);
     const [isLoading, setIsLoading] = useState(false);
-    const [hasMore, setHasMore] = useState(true);
     const { openPhoto, registerPhotos } = usePhotoGalleryActions();
 
     const hasActiveFilters = Object.values(activeFilters).some(v => v !== null);
+    const filteredTotalPages = filteredTotalCount ? Math.ceil(filteredTotalCount / ITEMS_PER_PAGE) : 0;
 
-    const fetchFilteredPhotos = useCallback(async (filters: FilterValues, offset = 0) => {
+    const fetchFilteredPhotos = useCallback(async (filters: FilterValues, page: number) => {
         setIsLoading(true);
         try {
+            const offset = (page - 1) * ITEMS_PER_PAGE;
             const filterParams = JSON.stringify(filters);
             const response = await fetch(
-                `/api/feed?offset=${offset}&limit=40&filters=${encodeURIComponent(filterParams)}`
+                `/api/feed?offset=${offset}&limit=${ITEMS_PER_PAGE}&filters=${encodeURIComponent(filterParams)}`
             );
             const data: FeedResponse = await response.json();
 
-            if (offset === 0) {
-                setFilteredPhotos(data.photos);
-                // Register photos for modal navigation
-                registerPhotos(data.photos, 0);
-            } else {
-                setFilteredPhotos(prev => {
-                    const newPhotos = [...(prev || []), ...data.photos];
-                    registerPhotos(data.photos, prev?.length || 0);
-                    return newPhotos;
-                });
-            }
-
-            setTotalCount(data.totalCount ?? null);
-            setHasMore(data.photos.length === 40);
+            setFilteredPhotos(data.photos);
+            setFilteredTotalCount(data.totalCount ?? null);
+            setFilteredPage(page);
+            // Register photos for modal navigation
+            registerPhotos(data.photos, 0);
         } catch (error) {
             console.error('Failed to fetch filtered photos:', error);
         } finally {
@@ -62,40 +60,28 @@ export function FilteredGallery({ children }: FilteredGalleryProps) {
 
         const hasFilters = Object.values(newFilters).some(v => v !== null);
         if (hasFilters) {
-            fetchFilteredPhotos(newFilters, 0);
+            fetchFilteredPhotos(newFilters, 1);
         } else {
             // Clear filtered results to show original SSR content
             setFilteredPhotos(null);
-            setTotalCount(null);
+            setFilteredTotalCount(null);
+            setFilteredPage(1);
         }
     }, [fetchFilteredPhotos]);
 
-    const loadMore = useCallback(() => {
-        if (!isLoading && hasMore && filteredPhotos) {
-            fetchFilteredPhotos(activeFilters, filteredPhotos.length);
-        }
-    }, [isLoading, hasMore, filteredPhotos, activeFilters, fetchFilteredPhotos]);
+    const handlePageChange = useCallback((page: number) => {
+        fetchFilteredPhotos(activeFilters, page);
+        // Scroll to top of results
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }, [activeFilters, fetchFilteredPhotos]);
 
     const handlePhotoClick = useCallback((item: Item, index: number) => {
         openPhoto(item, index);
     }, [openPhoto]);
 
-    // Infinite scroll for filtered results
-    useEffect(() => {
-        if (!hasActiveFilters) return;
-
-        const handleScroll = () => {
-            const scrolledToBottom =
-                window.innerHeight + window.scrollY >= document.documentElement.scrollHeight - 500;
-
-            if (scrolledToBottom && !isLoading && hasMore) {
-                loadMore();
-            }
-        };
-
-        window.addEventListener('scroll', handleScroll);
-        return () => window.removeEventListener('scroll', handleScroll);
-    }, [hasActiveFilters, isLoading, hasMore, loadMore]);
+    // Calculate display range for filtered results
+    const startItem = (filteredPage - 1) * ITEMS_PER_PAGE + 1;
+    const endItem = Math.min(filteredPage * ITEMS_PER_PAGE, filteredTotalCount || 0);
 
     return (
         <>
@@ -103,88 +89,181 @@ export function FilteredGallery({ children }: FilteredGalleryProps) {
                 filters={KITCHEN_FILTERS}
                 activeFilters={activeFilters}
                 onFilterChange={handleFilterChange}
+                totalCount={hasActiveFilters ? (filteredTotalCount ?? 0) : initialTotalCount}
             />
 
             {/* Show filtered results or original SSR content */}
             {hasActiveFilters ? (
-                <section style={{ paddingTop: '2rem', paddingBottom: '3rem' }}>
-                    <div className="container" style={{
-                        marginBottom: '2rem',
-                        display: 'flex',
-                        justifyContent: 'space-between',
-                        alignItems: 'center',
-                    }}>
-                        <div style={{
-                            fontSize: '0.9375rem',
-                            color: 'var(--secondary)',
-                            fontWeight: 500,
-                        }}>
-                            {isLoading && !filteredPhotos ? (
-                                'Loading filtered results...'
-                            ) : totalCount !== null ? (
-                                `${totalCount} photo${totalCount !== 1 ? 's' : ''} found`
-                            ) : (
-                                'Showing filtered results'
-                            )}
-                        </div>
-                    </div>
-
+                <section style={{ paddingTop: '1rem', paddingBottom: '1rem' }}>
+                    {/* Photo Grid */}
                     <div className="container photo-grid">
-                        {filteredPhotos?.map((photo, index) => (
-                            <PhotoCard
-                                key={photo.id}
-                                item={photo}
-                                index={index}
-                                priority={index < 4}
-                                onClick={(item) => handlePhotoClick(item, index)}
-                            />
-                        ))}
+                        {isLoading ? (
+                            // Loading skeleton
+                            Array.from({ length: 6 }).map((_, i) => (
+                                <div
+                                    key={i}
+                                    style={{
+                                        aspectRatio: '4/3',
+                                        background: '#f5f5f5',
+                                        borderRadius: '3px',
+                                        animation: 'pulse 1.5s ease-in-out infinite',
+                                    }}
+                                />
+                            ))
+                        ) : filteredPhotos && filteredPhotos.length > 0 ? (
+                            filteredPhotos.map((photo, index) => (
+                                <React.Fragment key={photo.id}>
+                                    {/* Insert CTA card after 3rd photo on first page */}
+                                    {filteredPage === 1 && index === 3 && <ProCTACard />}
+                                    <PhotoCard
+                                        item={photo}
+                                        index={index}
+                                        priority={index < 4}
+                                        onClick={(item) => handlePhotoClick(item, index)}
+                                    />
+                                </React.Fragment>
+                            ))
+                        ) : (
+                            <div style={{
+                                gridColumn: '1 / -1',
+                                textAlign: 'center',
+                                padding: '4rem 2rem',
+                                color: 'var(--text-muted)',
+                            }}>
+                                <div style={{ fontSize: '1.5rem', marginBottom: '1rem' }}>
+                                    No photos found
+                                </div>
+                                <p style={{ fontSize: '1rem', maxWidth: '400px', margin: '0 auto' }}>
+                                    Try adjusting your filters to see more results.
+                                </p>
+                            </div>
+                        )}
                     </div>
 
-                    {isLoading && filteredPhotos && filteredPhotos.length > 0 && (
-                        <div style={{
-                            textAlign: 'center',
-                            padding: '2rem',
-                            color: 'var(--text-muted)',
-                        }}>
-                            Loading more photos...
-                        </div>
-                    )}
+                    {/* Pagination for filtered results */}
+                    {filteredTotalPages > 1 && !isLoading && (
+                        <div className="container">
+                            <div style={{
+                                display: 'flex',
+                                flexDirection: 'column',
+                                alignItems: 'center',
+                                gap: '1rem',
+                                padding: '2rem 0',
+                                borderTop: '1px solid var(--border-light)',
+                                marginTop: '2rem',
+                            }}>
+                                {/* Photo count */}
+                                <div style={{
+                                    fontSize: '0.875rem',
+                                    color: 'var(--text-muted)',
+                                }}>
+                                    Showing {startItem} - {endItem} of {filteredTotalCount?.toLocaleString()} photos
+                                </div>
 
-                    {!isLoading && filteredPhotos && filteredPhotos.length === 0 && (
-                        <div className="container" style={{
-                            textAlign: 'center',
-                            padding: '4rem 2rem',
-                            color: 'var(--text-muted)',
-                        }}>
-                            <div style={{ fontSize: '3rem', marginBottom: '1rem' }}>
-                                No photos found
+                                {/* Pagination controls */}
+                                <div style={{
+                                    display: 'flex',
+                                    alignItems: 'center',
+                                    gap: '0.25rem',
+                                }}>
+                                    {/* Previous button */}
+                                    <button
+                                        onClick={() => handlePageChange(filteredPage - 1)}
+                                        disabled={filteredPage <= 1}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: '36px',
+                                            height: '36px',
+                                            borderRadius: '4px',
+                                            border: '1px solid var(--border-color)',
+                                            background: filteredPage <= 1 ? '#f9f9f9' : 'white',
+                                            color: filteredPage <= 1 ? '#ccc' : 'var(--foreground-dark)',
+                                            cursor: filteredPage <= 1 ? 'not-allowed' : 'pointer',
+                                        }}
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M15 18l-6-6 6-6" />
+                                        </svg>
+                                    </button>
+
+                                    {/* Page numbers */}
+                                    {Array.from({ length: Math.min(5, filteredTotalPages) }, (_, i) => {
+                                        let pageNum: number;
+                                        if (filteredTotalPages <= 5) {
+                                            pageNum = i + 1;
+                                        } else if (filteredPage <= 3) {
+                                            pageNum = i + 1;
+                                        } else if (filteredPage >= filteredTotalPages - 2) {
+                                            pageNum = filteredTotalPages - 4 + i;
+                                        } else {
+                                            pageNum = filteredPage - 2 + i;
+                                        }
+                                        return (
+                                            <button
+                                                key={pageNum}
+                                                onClick={() => handlePageChange(pageNum)}
+                                                style={{
+                                                    display: 'flex',
+                                                    alignItems: 'center',
+                                                    justifyContent: 'center',
+                                                    minWidth: '36px',
+                                                    height: '36px',
+                                                    padding: '0 0.5rem',
+                                                    borderRadius: '4px',
+                                                    border: filteredPage === pageNum
+                                                        ? '1px solid var(--foreground-dark)'
+                                                        : '1px solid transparent',
+                                                    background: filteredPage === pageNum ? '#f5f5f5' : 'transparent',
+                                                    color: 'var(--foreground-dark)',
+                                                    fontSize: '0.875rem',
+                                                    fontWeight: filteredPage === pageNum ? 600 : 400,
+                                                    cursor: 'pointer',
+                                                }}
+                                            >
+                                                {pageNum}
+                                            </button>
+                                        );
+                                    })}
+
+                                    {/* Next button */}
+                                    <button
+                                        onClick={() => handlePageChange(filteredPage + 1)}
+                                        disabled={filteredPage >= filteredTotalPages}
+                                        style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            justifyContent: 'center',
+                                            width: '36px',
+                                            height: '36px',
+                                            borderRadius: '4px',
+                                            border: '1px solid var(--border-color)',
+                                            background: filteredPage >= filteredTotalPages ? '#f9f9f9' : 'white',
+                                            color: filteredPage >= filteredTotalPages ? '#ccc' : 'var(--foreground-dark)',
+                                            cursor: filteredPage >= filteredTotalPages ? 'not-allowed' : 'pointer',
+                                        }}
+                                    >
+                                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                            <path d="M9 18l6-6-6-6" />
+                                        </svg>
+                                    </button>
+                                </div>
                             </div>
-                            <p style={{ fontSize: '1rem', maxWidth: '400px', margin: '0 auto' }}>
-                                Try adjusting your filters to see more results.
-                            </p>
-                        </div>
-                    )}
-
-                    {!hasMore && filteredPhotos && filteredPhotos.length > 0 && (
-                        <div className="container" style={{
-                            textAlign: 'center',
-                            margin: '3rem auto 0',
-                            padding: '2.5rem 0',
-                            borderTop: '1px solid var(--border-light)',
-                            color: 'var(--text-subtle)',
-                            fontSize: '0.875rem',
-                            fontWeight: 600,
-                            letterSpacing: '0.05em',
-                            textTransform: 'uppercase',
-                        }}>
-                            End of filtered results
                         </div>
                     )}
                 </section>
             ) : (
                 children
             )}
+
+            {/* Loading animation style */}
+            <style jsx global>{`
+                @keyframes pulse {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.5; }
+                }
+            `}</style>
         </>
     );
 }

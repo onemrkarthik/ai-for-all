@@ -28,7 +28,6 @@ export function ContactSection({
         return (
             <div style={{ position: 'sticky', top: '100px', height: 'fit-content' }}>
                 <ContactPane
-                    photoId={null}
                     professional={professional}
                     onBack={() => setShowContact(false)}
                     initialConversationId={existingConversationId}

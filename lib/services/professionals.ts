@@ -1,5 +1,14 @@
 import { db } from '@/lib/db';
 
+export interface ProfessionalListItem {
+    id: number;
+    name: string;
+    company: string;
+    averageRating?: number;
+    reviewCount: number;
+    projectCount: number;
+}
+
 export interface ProfessionalDetails {
     id: number;
     name: string;
@@ -48,6 +57,18 @@ const selectPhotosByProfessionalId = db.prepare(`
     ORDER BY p.id DESC
 `);
 
+const selectAllProfessionals = db.prepare(`
+    SELECT id, name, company
+    FROM professionals
+    ORDER BY name ASC
+`);
+
+const getProjectCount = db.prepare(`
+    SELECT COUNT(*) as count
+    FROM photos_professionals
+    WHERE professional_id = ?
+`);
+
 export function getProfessionalById(id: number): ProfessionalDetails | null {
     const professional = selectProfessionalById.get(id) as any;
     if (!professional) return null;
@@ -79,4 +100,24 @@ export function getProfessionalById(id: number): ProfessionalDetails | null {
         })),
         totalProjects: photos.length
     };
+}
+
+export function getAllProfessionals(): ProfessionalListItem[] {
+    const professionals = selectAllProfessionals.all() as any[];
+
+    return professionals.map(professional => {
+        const ratingStats = getAverageRating.get(professional.id) as any;
+        const projectStats = getProjectCount.get(professional.id) as any;
+
+        return {
+            id: professional.id,
+            name: professional.name,
+            company: professional.company,
+            averageRating: ratingStats?.avg_rating
+                ? Math.round(ratingStats.avg_rating * 10) / 10
+                : undefined,
+            reviewCount: ratingStats?.review_count || 0,
+            projectCount: projectStats?.count || 0,
+        };
+    });
 }

@@ -1,6 +1,6 @@
 import { NextResponse } from 'next/server';
 import { addMessage, getConversation, updateConversationSummary } from '@/lib/services/chat';
-import { getPhotoById } from '@/lib/services/photos';
+import { getProfessionalById } from '@/lib/services/professionals';
 import { generateAIResponse } from '@/lib/ai';
 
 export async function POST(request: Request) {
@@ -18,9 +18,10 @@ export async function POST(request: Request) {
             return NextResponse.json({ error: 'Conversation not found' }, { status: 404 });
         }
 
-        const photo = getPhotoById(conversation.photo_id);
-        if (!photo) {
-            return NextResponse.json({ error: 'Contextual photo not found' }, { status: 404 });
+        // Get professional context
+        const professional = getProfessionalById(conversation.professional_id);
+        if (!professional) {
+            return NextResponse.json({ error: 'Professional not found' }, { status: 404 });
         }
 
         // 2. Add User Message
@@ -30,8 +31,8 @@ export async function POST(request: Request) {
         const updatedConversation = getConversation(conversationId);
         if (!updatedConversation) throw new Error("Database sync error");
 
-        // 4. Generate AI Response
-        const aiResult = await generateAIResponse(photo, updatedConversation.messages);
+        // 4. Generate AI Response with professional context
+        const aiResult = await generateAIResponse(null, updatedConversation.messages, professional);
 
         // 5. Save AI Message & Update Summary
         const aiMessage = addMessage(conversationId, aiResult.response, 'assistant');

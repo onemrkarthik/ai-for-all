@@ -4,7 +4,6 @@ import { useState, useRef, useEffect } from 'react';
 import { api } from '@/lib/api';
 
 interface ContactPaneProps {
-    photoId: number | null;
     professional: {
         id: number;
         name: string;
@@ -20,7 +19,7 @@ interface Message {
     content: string;
 }
 
-export function ContactPane({ photoId, professional, onBack, initialConversationId }: ContactPaneProps) {
+export function ContactPane({ professional, onBack, initialConversationId }: ContactPaneProps) {
     const [view, setView] = useState<'initial' | 'chat'>('initial');
     const [inputValue, setInputValue] = useState('');
     const [conversationId, setConversationId] = useState<number | null>(null);
@@ -34,22 +33,17 @@ export function ContactPane({ photoId, professional, onBack, initialConversation
     const prevMessageCountRef = useRef<number>(0);
 
     // Initial Message Suggestion
-    const defaultMessage = photoId
-        ? `Hi ${professional.name}, I love this kitchen design! I'm interested in discussing a similar project for my home.`
-        : `Hi ${professional.name}, I'm interested in discussing a design project for my home.`;
+    const defaultMessage = `Hi ${professional.name}, I'm interested in discussing a design project for my home.`;
 
     useEffect(() => {
         if (initialConversationId) {
             setConversationId(initialConversationId);
             setView('chat');
 
-            // Fetch conversation history
-            // Use photo-specific endpoint if we have a photoId, otherwise use conversation ID endpoint
+            // Fetch conversation history using professional ID
             const fetchData = async () => {
                 try {
-                    const data = photoId
-                        ? await api.contact.latest(photoId)
-                        : await api.contact.conversation(initialConversationId);
+                    const data = await api.contact.latest(professional.id);
 
                     if (data.conversation) {
                         setMessages(data.conversation.messages);
@@ -66,7 +60,7 @@ export function ContactPane({ photoId, professional, onBack, initialConversation
         } else if (view === 'initial') {
             setInputValue(defaultMessage);
         }
-    }, [view, defaultMessage, professional.name, initialConversationId, photoId]);
+    }, [view, defaultMessage, professional.name, professional.id, initialConversationId]);
 
     // Auto-scroll to bottom of chat only when new messages are added
     useEffect(() => {
@@ -82,7 +76,6 @@ export function ContactPane({ photoId, professional, onBack, initialConversation
 
         try {
             const data = await api.contact.init({
-                photoId: photoId!,
                 professionalId: professional.id,
                 message: inputValue
             });
@@ -91,7 +84,7 @@ export function ContactPane({ photoId, professional, onBack, initialConversation
             setMessages(data.messages);
             setActiveSuggestions(data.suggestions || []);
             setProjectSummary(data.projectSummary || null);
-            setIsSufficient(data.isSufficient || false); // In case init somehow triggers it
+            setIsSufficient(data.isSufficient || false);
             setView('chat');
             setInputValue('');
         } catch (error) {

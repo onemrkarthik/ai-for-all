@@ -1,20 +1,21 @@
 import { NextResponse } from 'next/server';
 import { createConversation, ChatMessage } from '@/lib/services/chat';
-import { getPhotoById } from '@/lib/services/photos';
 import { generateAIResponse } from '@/lib/ai';
+import { getProfessionalById } from '@/lib/services/professionals';
 
 export async function POST(request: Request) {
     try {
         const body = await request.json();
-        const { photoId, professionalId, message } = body;
+        const { professionalId, message } = body;
 
-        if (!photoId || !message) {
-            return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+        if (!professionalId || !message) {
+            return NextResponse.json({ error: 'Missing required fields (professionalId, message)' }, { status: 400 });
         }
 
-        const photo = getPhotoById(photoId);
-        if (!photo) {
-            return NextResponse.json({ error: 'Photo not found' }, { status: 404 });
+        // Verify professional exists
+        const professional = getProfessionalById(professionalId);
+        if (!professional) {
+            return NextResponse.json({ error: 'Professional not found' }, { status: 404 });
         }
 
         // Fetch AI Response for the initial message
@@ -25,12 +26,10 @@ export async function POST(request: Request) {
             created_at: new Date().toISOString()
         };
 
-        const aiResponse = await generateAIResponse(photo, [initialUserMsg]);
+        // Pass professional context to AI instead of photo context
+        const aiResponse = await generateAIResponse(null, [initialUserMsg], professional);
 
-        // Default professional ID if not provided (mock logic since we don't strictly enforce it in UI yet)
-        const profId = professionalId || 1;
-
-        const conversation = createConversation(photoId, profId, message, aiResponse.response, aiResponse.projectSummary);
+        const conversation = createConversation(professionalId, message, aiResponse.response, aiResponse.projectSummary);
 
         return NextResponse.json({
             ...conversation,

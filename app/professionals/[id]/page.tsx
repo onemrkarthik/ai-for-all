@@ -1,7 +1,6 @@
 import { Suspense } from 'react';
 import Image from 'next/image';
 import { notFound } from 'next/navigation';
-import { BackButton } from './BackButton';
 import { ContactSection } from './ContactSection';
 import { PhotoCard } from './PhotoCard';
 import { PhotoGalleryProvider } from '@/app/components/PhotoGallery';
@@ -138,37 +137,8 @@ export default async function ProfessionalPage({
         <PhotoGalleryProvider>
             <PhotoGalleryRegistrar photos={galleryPhotos} />
             <div style={{ minHeight: '100vh', background: 'var(--background-warm)' }}>
-            {/* Header Navigation */}
-            <nav style={{
-                background: 'white',
-                borderBottom: '1px solid var(--border-light)',
-                padding: '1rem 0',
-                position: 'sticky',
-                top: 0,
-                zIndex: 100,
-                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.04)',
-            }}>
-                <div className="container" style={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '1rem',
-                }}>
-                    <BackButton />
-                    <h2 style={{
-                        fontFamily: 'var(--font-serif)',
-                        fontSize: '1.75rem',
-                        fontWeight: 500,
-                        color: 'var(--primary)',
-                        margin: 0,
-                        letterSpacing: '-0.02em',
-                    }}>
-                        Design Gallery
-                    </h2>
-                </div>
-            </nav>
-
             <div className="container" style={{
-                paddingTop: '3rem',
+                paddingTop: '2rem',
                 paddingBottom: '4rem',
             }}>
                 <div style={{

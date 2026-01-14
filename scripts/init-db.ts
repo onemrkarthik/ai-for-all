@@ -56,13 +56,11 @@ const SCHEMA_SQL = `
 
     CREATE TABLE IF NOT EXISTS conversations (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
-        photo_id INTEGER NOT NULL,
-        professional_id INTEGER,
+        professional_id INTEGER NOT NULL,
         created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
         last_summary TEXT,
         last_viewed_at DATETIME,
-        FOREIGN KEY (photo_id) REFERENCES photos(id) ON DELETE CASCADE,
-        FOREIGN KEY (professional_id) REFERENCES professionals(id) ON DELETE SET NULL
+        FOREIGN KEY (professional_id) REFERENCES professionals(id) ON DELETE CASCADE
     );
 
     CREATE TABLE IF NOT EXISTS messages (
@@ -146,6 +144,50 @@ const runTransaction = db.transaction((items: any[]) => {
     }
 });
 
+// Curated Unsplash kitchen images (reliable, high-quality kitchen photos)
+const kitchenImages = [
+    'https://images.unsplash.com/photo-1556909114-f6e7ad7d3136?w=800&h=600&fit=crop', // White modern kitchen
+    'https://images.unsplash.com/photo-1556909172-8c2f041fdc1e?w=800&h=600&fit=crop', // Kitchen with pendant lights
+    'https://images.unsplash.com/photo-1556909211-36987daf7b4d?w=800&h=600&fit=crop', // Kitchen island
+    'https://images.unsplash.com/photo-1484154218962-a197022b5858?w=800&h=600&fit=crop', // Modern kitchen
+    'https://images.unsplash.com/photo-1507089947368-19c1da9775ae?w=800&h=600&fit=crop', // Kitchen counter
+    'https://images.unsplash.com/photo-1565538810643-b5bdb714032a?w=800&h=600&fit=crop', // Elegant kitchen
+    'https://images.unsplash.com/photo-1600585152220-90363fe7e115?w=800&h=600&fit=crop', // Kitchen design
+    'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=800&h=600&fit=crop', // Modern white kitchen
+    'https://images.unsplash.com/photo-1556912167-f556f1f39faa?w=800&h=600&fit=crop', // Kitchen details
+    'https://images.unsplash.com/photo-1556909190-eccf4a8bf97a?w=800&h=600&fit=crop', // Contemporary kitchen
+    'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=800&h=600&fit=crop', // Luxury kitchen
+    'https://images.unsplash.com/photo-1600607687644-aac4c3eac7f4?w=800&h=600&fit=crop', // Kitchen interior
+    'https://images.unsplash.com/photo-1600566753086-00f18fb6b3ea?w=800&h=600&fit=crop', // Kitchen with island
+    'https://images.unsplash.com/photo-1600566753190-17f0baa2a6c3?w=800&h=600&fit=crop', // Minimalist kitchen
+    'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?w=800&h=600&fit=crop', // Kitchen appliances
+    'https://images.unsplash.com/photo-1556909114-44e3e70034e2?w=800&h=600&fit=crop', // Kitchen cabinets
+    'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=800&h=600&fit=crop', // Kitchen living
+    'https://images.unsplash.com/photo-1600573472592-401b489a3cdc?w=800&h=600&fit=crop', // Kitchen dining
+    'https://images.unsplash.com/photo-1600210492493-0946911123ea?w=800&h=600&fit=crop', // Modern design
+    'https://images.unsplash.com/photo-1600566753151-384129cf4e3e?w=800&h=600&fit=crop', // Kitchen space
+    'https://images.unsplash.com/photo-1583847268964-b28dc8f51f92?w=800&h=600&fit=crop', // Interior design
+    'https://images.unsplash.com/photo-1600489000022-c2086d79f9d4?w=800&h=600&fit=crop', // Home kitchen
+    'https://images.unsplash.com/photo-1600585152915-d208bec867a1?w=800&h=600&fit=crop', // Kitchen view
+    'https://images.unsplash.com/photo-1556909114-a9a073aede51?w=800&h=600&fit=crop', // White kitchen
+    'https://images.unsplash.com/photo-1570739365376-26e49de30e3e?w=800&h=600&fit=crop', // Chef kitchen
+    'https://images.unsplash.com/photo-1565183997392-2f6f122e5912?w=800&h=600&fit=crop', // Kitchen stove
+    'https://images.unsplash.com/photo-1600607688969-a5bfcd646154?w=800&h=600&fit=crop', // Bright kitchen
+    'https://images.unsplash.com/photo-1556909114-5e33c7d0f6f4?w=800&h=600&fit=crop', // Kitchen backsplash
+    'https://images.unsplash.com/photo-1560185007-c5ca9d2c014d?w=800&h=600&fit=crop', // Rustic kitchen
+    'https://images.unsplash.com/photo-1560448205-4d9b3e6bb6db?w=800&h=600&fit=crop', // Open kitchen
+    'https://images.unsplash.com/photo-1600566752734-64da76e65320?w=800&h=600&fit=crop', // Kitchen marble
+    'https://images.unsplash.com/photo-1556909114-d88b61e57dc1?w=800&h=600&fit=crop', // Kitchen sink
+    'https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=800&h=600&fit=crop', // Kitchen lighting
+    'https://images.unsplash.com/photo-1556909190-6f13d97a4f5a?w=800&h=600&fit=crop', // Gray kitchen
+    'https://images.unsplash.com/photo-1600566753376-12c8ab7fb75b?w=800&h=600&fit=crop', // Kitchen window
+    'https://images.unsplash.com/photo-1556909115-5e8c00cef8c2?w=800&h=600&fit=crop', // Kitchen wood
+    'https://images.unsplash.com/photo-1600585154340-be6161a56a0c?w=800&h=600&fit=crop', // House kitchen
+    'https://images.unsplash.com/photo-1556909190-ac37bb4dd4bc?w=800&h=600&fit=crop', // Clean kitchen
+    'https://images.unsplash.com/photo-1560448075-bb485b067938?w=800&h=600&fit=crop', // Traditional kitchen
+    'https://images.unsplash.com/photo-1556909114-bd0e1f23e8c3?w=800&h=600&fit=crop', // Kitchen counter top
+];
+
 // Kitchen-specific titles
 const kitchenTitlePrefixes = [
     'Modern', 'Contemporary', 'Transitional', 'Traditional', 'Farmhouse',
@@ -204,7 +246,7 @@ for (let i = 0; i < limit; i++) {
         id,
         title,
         source: `Stream Batch`, // Simplified source logic
-        image: `https://loremflickr.com/800/600/kitchen,interior,modern?lock=${id}`,
+        image: kitchenImages[id % kitchenImages.length], // Use curated Unsplash kitchen images
         description: kitchenDescriptions[id % kitchenDescriptions.length],
         attributes
     });

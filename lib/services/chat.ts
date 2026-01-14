@@ -9,7 +9,6 @@ export interface ChatMessage {
 
 export interface Conversation {
     id: number;
-    photo_id: number;
     professional_id: number;
     last_summary?: string;
     last_viewed_at?: string;
@@ -18,8 +17,8 @@ export interface Conversation {
 }
 
 const createConversationStmt = db.prepare(`
-    INSERT INTO conversations (photo_id, professional_id, last_summary)
-    VALUES (?, ?, ?)
+    INSERT INTO conversations (professional_id, last_summary)
+    VALUES (?, ?)
 `);
 
 const insertMessageStmt = db.prepare(`
@@ -31,10 +30,10 @@ const getConversationStmt = db.prepare(`
     SELECT * FROM conversations WHERE id = ?
 `);
 
-const getLatestConversationByPhotoStmt = db.prepare(`
-    SELECT * FROM conversations 
-    WHERE photo_id = ? 
-    ORDER BY created_at DESC 
+const getLatestConversationByProfessionalStmt = db.prepare(`
+    SELECT * FROM conversations
+    WHERE professional_id = ?
+    ORDER BY created_at DESC
     LIMIT 1
 `);
 
@@ -60,10 +59,10 @@ const markConversationViewedStmt = db.prepare(`
     WHERE id = ?
 `);
 
-export function createConversation(photoId: number, professionalId: number, userMessage: string, aiResponse: string, summary?: string): Conversation {
+export function createConversation(professionalId: number, userMessage: string, aiResponse: string, summary?: string): Conversation {
     // Transaction to ensure atomicity
     const convoId = db.transaction(() => {
-        const info = createConversationStmt.run(photoId, professionalId, summary || null);
+        const info = createConversationStmt.run(professionalId, summary || null);
         const conversationId = info.lastInsertRowid as number;
 
         insertMessageStmt.run(conversationId, 'user', userMessage);
@@ -79,8 +78,8 @@ export function updateConversationSummary(conversationId: number, summary: strin
     updateSummaryStmt.run(summary, conversationId);
 }
 
-export function getLatestConversationByPhotoId(photoId: number): Conversation | null {
-    const convo = getLatestConversationByPhotoStmt.get(photoId) as any;
+export function getLatestConversationByProfessionalId(professionalId: number): Conversation | null {
+    const convo = getLatestConversationByProfessionalStmt.get(professionalId) as any;
     if (!convo) return null;
 
     const messages = getMessagesStmt.all(convo.id) as ChatMessage[];
@@ -91,7 +90,6 @@ export function getLatestConversationByPhotoId(photoId: number): Conversation | 
 
     return {
         id: convo.id,
-        photo_id: convo.photo_id,
         professional_id: convo.professional_id,
         last_summary: convo.last_summary,
         last_viewed_at: convo.last_viewed_at,
@@ -122,7 +120,6 @@ export function getConversation(conversationId: number): Conversation | null {
 
     return {
         id: convo.id,
-        photo_id: convo.photo_id,
         professional_id: convo.professional_id,
         last_summary: convo.last_summary,
         last_viewed_at: convo.last_viewed_at,
