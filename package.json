@@ -6,7 +6,11 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "db:init": "tsx scripts/init-db.ts",
+    "db:reset": "rm -f local.db local.db-wal local.db-shm && tsx scripts/init-db.ts",
+    "setup": "npm install && npm run db:init",
+    "postinstall": "test -f local.db || npm run db:init"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -23,6 +27,7 @@
     "@types/react-dom": "^19",
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
+    "tsx": "^4.21.0",
     "typescript": "^5"
   }
 }
