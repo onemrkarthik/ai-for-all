@@ -290,6 +290,7 @@ export function ContactPane({ professional, onBack, initialConversationId }: Con
                 {messages.map((msg) => (
                     <div
                         key={msg.id}
+                        className="chat-message"
                         style={{
                             alignSelf: msg.role === 'user' ? 'flex-end' : 'flex-start',
                             maxWidth: '85%',

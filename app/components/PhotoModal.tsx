@@ -87,6 +87,62 @@ interface FullPhotoDetails extends Item {
 }
 
 /**
+ * PERFORMANCE OPTIMIZATION: Hoisted Static Styles
+ *
+ * These style objects are defined outside the component to prevent
+ * recreation on every render, following Vercel's best practices.
+ * See docs/REACT_BEST_PRACTICES_REVIEW.md
+ */
+const modalContainerStyles = {
+    position: 'fixed',
+    inset: 0,
+    background: '#000',
+    zIndex: 1000,
+    display: 'flex',
+} as const;
+
+const imageContainerStyles = {
+    flex: 1,
+    position: 'relative',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+} as const;
+
+const sidebarStyles = {
+    width: '420px',
+    background: 'var(--background)',
+    height: '100vh',
+    overflowY: 'auto',
+    display: 'flex',
+    flexDirection: 'column',
+    boxShadow: '-8px 0 24px rgba(0, 0, 0, 0.15)',
+    zIndex: 20,
+    position: 'relative',
+} as const;
+
+const navButtonBaseStyles = {
+    position: 'absolute',
+    top: '50%',
+    transform: 'translateY(-50%)',
+    width: '48px',
+    height: '48px',
+    borderRadius: '2px',
+    background: 'rgba(255, 255, 255, 0.95)',
+    backdropFilter: 'blur(8px)',
+    border: '1px solid rgba(0, 0, 0, 0.08)',
+    cursor: 'pointer',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '1.25rem',
+    color: 'var(--foreground-dark)',
+    boxShadow: 'var(--shadow-md)',
+    transition: 'all 0.2s cubic-bezier(0.4, 0, 0.2, 1)',
+    zIndex: 10,
+} as const;
+
+/**
  * PhotoModal Component
  *
  * Full-screen modal for viewing photos with navigation controls and detailed information.
@@ -185,17 +241,23 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
          * - Professional information (name, company)
          * - Detailed description
          * - Photo attributes (style, room type, etc.)
+         *
+         * OPTIMIZATION: Conversation fetch runs in parallel (non-blocking)
+         * to avoid sequential API waterfall. Photo details display immediately
+         * while conversation data loads in background.
          */
         const fetchDetails = async () => {
             try {
-                // First fetch photo details to get professional ID
+                // Fetch photo details first (required for UI)
                 const photoDetails = await api.photos.get(photo.id);
                 setFullDetails(photoDetails);
 
-                // Then fetch latest conversation using professional ID (if professional exists)
+                // Fetch conversation in parallel - doesn't block photo details display
+                // This eliminates the API waterfall pattern
                 if (photoDetails.professional?.id) {
-                    const conversationData = await api.contact.latest(photoDetails.professional.id);
-                    setResumeConversation(conversationData.conversation);
+                    api.contact.latest(photoDetails.professional.id)
+                        .then(conversationData => setResumeConversation(conversationData.conversation))
+                        .catch(err => console.error("Failed to load conversation:", err));
                 }
             } catch (error) {
                 console.error("Failed to load photo details", error);
@@ -264,25 +326,9 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
     const isLast = currentIndex >= totalPhotos - 1 && !isLoadingMore; // Disable next button on last photo (unless loading more)
 
     return (
-        <div
-            style={{
-                position: 'fixed',
-                inset: 0, // Shorthand for top: 0, right: 0, bottom: 0, left: 0
-                background: '#000',
-                zIndex: 1000, // Above all content, below nothing
-                display: 'flex', // Horizontal layout: image viewer + sidebar
-            }}
-        >
+        <div style={modalContainerStyles}>
             {/* Image Display Area - Left side, flexes to fill remaining space after sidebar */}
-            <div
-                style={{
-                    flex: 1, // Take remaining space after fixed-width sidebar
-                    position: 'relative',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                }}
-            >
+            <div style={imageContainerStyles}>
                 {/* 
                   Progressive Image Loading (Seamless):
                   1. Low-res image shows immediately and stays visible
@@ -454,17 +500,7 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
 
             {/* Right Sidebar - Photo Details and Actions */}
             <div
-                style={{
-                    width: '420px', // Slightly wider for better readability
-                    background: 'var(--background)',
-                    height: '100vh',
-                    overflowY: 'auto',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    boxShadow: '-8px 0 24px rgba(0, 0, 0, 0.15)',
-                    zIndex: 20,
-                    position: 'relative',
-                }}
+                style={sidebarStyles}
                 onClick={(e) => e.stopPropagation()}
             >
                 {/* Close button - positioned absolutely */}

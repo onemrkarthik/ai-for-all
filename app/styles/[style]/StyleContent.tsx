@@ -5,13 +5,14 @@
  * for each kitchen design facet.
  */
 
+import React from 'react';
 import { StyleGuide, StyleFacet } from '@/lib/data/style-guides';
 
 interface StyleContentProps {
   guide: StyleGuide;
 }
 
-const FACET_ICONS: Record<string, JSX.Element> = {
+const FACET_ICONS: Record<string, React.ReactNode> = {
   layout: (
     <svg width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
       <rect x="3" y="3" width="18" height="18" rx="2" />

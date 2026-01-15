@@ -2130,6 +2130,135 @@ graph LR
 
 ---
 
+## React Best Practices
+
+This codebase follows [Vercel's React Best Practices](https://vercel.com/blog/how-we-made-the-vercel-dashboard-twice-as-fast) for optimal performance. For a detailed review of all components, see `docs/REACT_BEST_PRACTICES_REVIEW.md`.
+
+### Key Patterns Implemented
+
+#### 1. Context Splitting (Critical)
+
+Separate contexts for state and actions prevent unnecessary re-renders:
+
+```typescript
+// PhotoGallery.tsx
+const PhotoGalleryStateContext = createContext<PhotoGalleryState>({...});
+const PhotoGalleryActionsContext = createContext<PhotoGalleryActions>({...});
+
+// Components using only actions don't re-render on state changes
+export function usePhotoGalleryActions() {
+    return useContext(PhotoGalleryActionsContext);
+}
+```
+
+#### 2. Deferred Work with setTimeout (High)
+
+Yield to the main thread for non-critical work:
+
+```typescript
+// PhotoBatchClient.tsx
+useEffect(() => {
+    const timer = setTimeout(() => {
+        registerPhotos(data, offset);
+    }, 0);  // Yields to main thread, reduces TBT
+    return () => clearTimeout(timer);
+}, [data, offset, registerPhotos]);
+```
+
+#### 3. Parallel API Fetching (Critical)
+
+Non-dependent API calls run in parallel:
+
+```typescript
+// PhotoModal.tsx
+const fetchDetails = async () => {
+    const photoDetails = await api.photos.get(photo.id);
+    setFullDetails(photoDetails);
+
+    // Conversation fetch runs in parallel - doesn't block UI
+    if (photoDetails.professional?.id) {
+        api.contact.latest(photoDetails.professional.id)
+            .then(data => setResumeConversation(data.conversation));
+    }
+};
+```
+
+#### 4. Content Visibility for Long Lists (High)
+
+CSS `content-visibility` skips off-screen rendering:
+
+```css
+/* globals.css */
+.chat-message {
+    content-visibility: auto;
+    contain-intrinsic-size: 0 60px;
+}
+```
+
+#### 5. Hoisted Static Styles (Medium)
+
+Static inline styles hoisted outside components:
+
+```typescript
+// PhotoModal.tsx
+const modalContainerStyles = {
+    position: 'fixed',
+    inset: 0,
+    background: '#000',
+    zIndex: 1000,
+    display: 'flex',
+} as const;
+
+export function PhotoModal() {
+    return <div style={modalContainerStyles}>...</div>;
+}
+```
+
+#### 6. Optimistic Updates (Medium)
+
+UI updates immediately while API requests are in flight:
+
+```typescript
+// ContactPane.tsx
+const handleSendChat = async () => {
+    // Optimistic Update - shows immediately
+    const tempMsg = { id: Date.now(), role: 'user', content: messageToSend };
+    setMessages(prev => [...prev, tempMsg]);
+
+    // API call in background
+    const data = await api.contact.chat({ conversationId, message });
+    setMessages(prev => [...prev, data.message]);
+};
+```
+
+#### 7. Priority Image Loading (High)
+
+First batch images use `priority` for LCP optimization:
+
+```typescript
+// PhotoBatchClient.tsx
+<PhotoCard
+    priority={initialData && localIndex < 4}  // First 4 images prioritized
+/>
+```
+
+### Rules Reference
+
+| Priority | Rule | File | Status |
+|----------|------|------|--------|
+| Critical | Context Splitting | PhotoGallery.tsx | ✅ |
+| Critical | Parallel API Calls | PhotoModal.tsx | ✅ |
+| High | Deferred Work | PhotoBatchClient.tsx | ✅ |
+| High | Content Visibility | globals.css | ✅ |
+| High | Priority Loading | PhotoBatchClient.tsx | ✅ |
+| Medium | Hoisted Styles | PhotoModal.tsx | ✅ |
+| Medium | Optimistic Updates | ContactPane.tsx | ✅ |
+| Medium | Functional setState | ContactPane.tsx | ✅ |
+
+For the complete 45-rule review, see `docs/REACT_BEST_PRACTICES_REVIEW.md`.
+
+---
+
 ## Conclusion
 
 This architecture documentation provides a comprehensive overview of the streaming app's technical design. The application demonstrates modern full-stack development practices with:

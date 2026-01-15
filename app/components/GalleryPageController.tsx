@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useCallback, useRef } from 'react';
-import { useRouter, usePathname, useSearchParams } from 'next/navigation';
+import { useRouter, usePathname } from 'next/navigation';
 import { usePhotoGalleryActions } from './PhotoGallery';
 import { Item } from '@/lib/data';
 
@@ -17,11 +17,15 @@ interface GalleryPageControllerProps {
  * This component:
  * 1. Sets up a callback to load more photos when viewing the last photo in modal
  * 2. Updates the URL/page when the modal closes if more photos were loaded
+ *
+ * PERFORMANCE OPTIMIZATION: Removed useSearchParams() subscription.
+ * Search params are read on-demand via window.location.search to prevent
+ * unnecessary re-renders when other URL params change.
+ * See docs/REACT_BEST_PRACTICES_REVIEW.md (rule: rerender-defer-reads)
  */
 export function GalleryPageController({ currentPage, itemsPerPage, totalPages }: GalleryPageControllerProps) {
     const router = useRouter();
     const pathname = usePathname();
-    const searchParams = useSearchParams();
     const { setOnLoadMore, setOnModalClose } = usePhotoGalleryActions();
 
     // Track the next page to load
@@ -70,8 +74,8 @@ export function GalleryPageController({ currentPage, itemsPerPage, totalPages }:
 
             console.log(`[GalleryPageController] Modal closed, loaded pages: ${loadedPagesRef.current.join(', ')}, navigating to page ${highestPage}`);
 
-            // Update URL to the highest page loaded
-            const params = new URLSearchParams(searchParams.toString());
+            // Read search params on-demand (avoids useSearchParams subscription)
+            const params = new URLSearchParams(window.location.search);
             if (highestPage === 1) {
                 params.delete('page');
             } else {
@@ -81,7 +85,7 @@ export function GalleryPageController({ currentPage, itemsPerPage, totalPages }:
             const newUrl = params.toString() ? `${pathname}?${params.toString()}` : pathname;
             router.push(newUrl);
         }
-    }, [pathname, searchParams, router]);
+    }, [pathname, router]);
 
     // Set up callbacks on mount
     useEffect(() => {

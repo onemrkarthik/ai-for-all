@@ -234,3 +234,40 @@ h3 {
     background-position: 1000px 0;
   }
 }
+
+/* =================================================================
+   PERFORMANCE OPTIMIZATIONS
+   Based on Vercel React Best Practices
+   See docs/REACT_BEST_PRACTICES_REVIEW.md for details
+   ================================================================= */
+
+/**
+ * Content Visibility for Chat Messages
+ *
+ * Skips rendering of off-screen chat messages, significantly improving
+ * performance for long conversation threads.
+ *
+ * contain-intrinsic-size provides a placeholder height to prevent
+ * layout shifts when messages come into view.
+ */
+.chat-message {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 60px;
+}
+
+/**
+ * Content Visibility for Photo Grid Items
+ *
+ * Improves performance when scrolling through large photo galleries.
+ * Each card is ~550px tall (450px image + 100px metadata).
+ */
+.photo-card-optimized {
+  content-visibility: auto;
+  contain-intrinsic-size: 0 550px;
+}
+
+@media (max-width: 600px) {
+  .photo-card-optimized {
+    contain-intrinsic-size: 0 320px;
+  }
+}
