@@ -1,16 +1,19 @@
 {
-  "name": "houzz-for-all-with-ai",
+  "name": "ai-for-all",
   "version": "0.1.0",
   "private": true,
   "scripts": {
     "dev": "next dev",
+    "prebuild": "npm run check:no-houzz",
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
+    "check:no-houzz": "tsx scripts/check-no-houzz-code.ts",
     "db:init": "tsx scripts/init-db.ts",
     "db:reset": "rm -f local.db local.db-wal local.db-shm && tsx scripts/init-db.ts",
-    "setup": "npm install && npm run db:init",
-    "postinstall": "test -f local.db || npm run db:init"
+    "hooks:install": "bash scripts/install-hooks.sh",
+    "setup": "npm install && npm run db:init && npm run hooks:install",
+    "postinstall": "bash scripts/install-hooks.sh && (test -f local.db || npm run db:init)"
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",

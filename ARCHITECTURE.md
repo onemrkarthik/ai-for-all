@@ -1,4 +1,4 @@
-# houzz-for-all-with-ai - Architecture Documentation
+# AI for All - Architecture Documentation
 
 ## Table of Contents
 1. [System Overview](#system-overview)
@@ -2029,7 +2029,7 @@ graph TB
 ## File Structure Reference
 
 ```
-houzz-for-all-with-ai/
+ai-for-all/
 ├── app/
 │   ├── api/                    # Backend API routes
 │   │   ├── contact/

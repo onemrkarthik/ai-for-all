@@ -7,7 +7,7 @@ import { ProCTACard } from './ProCTACard';
 import { Item } from '@/lib/data';
 import { usePhotoGalleryActions } from './PhotoGallery';
 
-const ITEMS_PER_PAGE = 30;
+const ITEMS_PER_PAGE = 100;
 
 interface FilteredGalleryProps {
     children: ReactNode;

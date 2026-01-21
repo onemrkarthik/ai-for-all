@@ -18,7 +18,7 @@ Kitchen design gallery with AI-powered professional consultation. Full-stack Nex
 ```bash
 # 1. Clone and install (database auto-initializes on first install)
 git clone <repository-url>
-cd houzz-for-all-with-ai
+cd ai-for-all
 npm install
 
 # 2. Configure environment
@@ -51,13 +51,17 @@ npm run db:init          # Initialize database with seed data
 npm run db:reset         # Delete and recreate database (fresh start)
 
 # Build & Production
-npm run build            # Create production build
+npm run build            # Create production build (includes Houzz code check)
 npm run start            # Run production server
 
-# Linting
+# Linting & Checks
 npm run lint             # Run ESLint
+npm run check:no-houzz   # Verify no Houzz/IVY ecosystem code is included
 
-# Full Setup (install + db init)
+# Git Hooks
+npm run hooks:install    # Install git hooks (auto-runs on npm install)
+
+# Full Setup (install + db init + hooks)
 npm run setup            # Run after cloning if npm install didn't auto-init
 ```
 
@@ -93,6 +97,19 @@ This native module requires build tools. On macOS:
 ```bash
 xcode-select --install
 ```
+
+### Build fails with "Houzz/IVY ecosystem code detected"
+The build includes a pre-check that scans for Houzz and IVY-related code patterns. If you see this error:
+1. Run `npm run check:no-houzz` to see specific violations
+2. Remove or replace any `@houzz/*` or `@ivy/*` package imports
+3. Replace `houzz.com` or `ivy.co` URLs with appropriate alternatives
+4. The check script is at `scripts/check-no-houzz-code.ts` - see allowlist patterns there
+
+### Push blocked with "Houzz/IVY namespace detected"
+Git hooks prevent pushing to Houzz or IVY-owned GitHub namespaces. If you see this error:
+1. You're trying to push to a forbidden organization (github.com/houzz/*, github.com/ivy/*, etc.)
+2. Use a different remote: `git remote set-url origin <your-repo-url>`
+3. Hooks are installed via `npm run hooks:install` (auto-runs on npm install)
 
 ## Architecture
 

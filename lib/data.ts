@@ -26,7 +26,7 @@ export async function fetchLiveStreamData(offset: number, limit: number, delayMs
     return getPhotos({ offset, limit });
 }
 
-export async function fetchPaginatedPhotos(page: number, itemsPerPage: number = 30): Promise<PaginatedResult> {
+export async function fetchPaginatedPhotos(page: number, itemsPerPage: number = 100): Promise<PaginatedResult> {
     const offset = (page - 1) * itemsPerPage;
     const totalCount = getFilteredPhotosCount();
     const totalPages = Math.ceil(totalCount / itemsPerPage);

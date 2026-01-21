@@ -1,6 +1,6 @@
 # Database Schema Management
 
-Centralized database schema management for houzz-for-all-with-ai.
+Centralized database schema management for AI for All.
 
 ## Overview
 

@@ -30,7 +30,7 @@ import Footer from "./components/Footer";
  * when the page is shared or indexed.
  */
 export const metadata: Metadata = {
-  title: "houzz-for-all-with-ai",
+  title: "AI for All",
   description: "A high-performance home design streaming application",
 };
 

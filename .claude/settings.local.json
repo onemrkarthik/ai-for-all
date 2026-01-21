@@ -20,7 +20,9 @@
       "Bash(npx tsc:*)",
       "mcp__ide__getDiagnostics",
       "Bash(pkill:*)",
-      "Bash(npx ts-node:*)"
+      "Bash(npx ts-node:*)",
+      "Bash(git commit:*)",
+      "Bash(xargs kill:*)"
     ]
   }
 }

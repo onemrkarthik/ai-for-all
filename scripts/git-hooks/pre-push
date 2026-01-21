@@ -1,0 +1,106 @@
+#!/bin/bash
+#
+# pre-push hook - Prevents pushing to Houzz or IVY GitHub namespaces
+#
+# This hook is called with the following parameters:
+#   $1 -- Name of the remote to which the push is being done
+#   $2 -- URL to which the push is being done
+#
+# Exit codes:
+#   0 - Push allowed
+#   1 - Push blocked (Houzz/IVY namespace detected)
+
+remote="$1"
+url="$2"
+
+# Patterns that indicate Houzz GitHub namespaces
+# Matches: github.com/houzz, github.com/houzz-*, github.com/Houzz, etc.
+HOUZZ_PATTERNS=(
+    "github\.com[:/]houzz/"
+    "github\.com[:/]houzz-"
+    "github\.com[:/]Houzz/"
+    "github\.com[:/]Houzz-"
+    "github\.com[:/]HOUZZ/"
+    "github\.com[:/]HOUZZ-"
+    "gitlab\.com[:/]houzz"
+    "bitbucket\.org[:/]houzz"
+)
+
+# Patterns that indicate IVY GitHub namespaces
+# Matches: github.com/ivy, github.com/ivy-*, github.com/Ivy, etc.
+IVY_PATTERNS=(
+    "github\.com[:/]ivy/"
+    "github\.com[:/]ivy-"
+    "github\.com[:/]Ivy/"
+    "github\.com[:/]Ivy-"
+    "github\.com[:/]IVY/"
+    "github\.com[:/]IVY-"
+    "gitlab\.com[:/]ivy"
+    "bitbucket\.org[:/]ivy"
+)
+
+# Check the remote URL against Houzz patterns
+for pattern in "${HOUZZ_PATTERNS[@]}"; do
+    if echo "$url" | grep -iqE "$pattern"; then
+        echo ""
+        echo "❌ PUSH BLOCKED: Houzz namespace detected!"
+        echo ""
+        echo "   Remote: $remote"
+        echo "   URL: $url"
+        echo ""
+        echo "   This repository cannot be pushed to Houzz-owned namespaces."
+        echo "   Please use a different remote repository."
+        echo ""
+        exit 1
+    fi
+done
+
+# Check the remote URL against IVY patterns
+for pattern in "${IVY_PATTERNS[@]}"; do
+    if echo "$url" | grep -iqE "$pattern"; then
+        echo ""
+        echo "❌ PUSH BLOCKED: IVY namespace detected!"
+        echo ""
+        echo "   Remote: $remote"
+        echo "   URL: $url"
+        echo ""
+        echo "   This repository cannot be pushed to IVY-owned namespaces."
+        echo "   Please use a different remote repository."
+        echo ""
+        exit 1
+    fi
+done
+
+# Also check all configured remotes (in case someone tries to push via remote name)
+while read -r remote_name remote_url; do
+    # Check Houzz patterns
+    for pattern in "${HOUZZ_PATTERNS[@]}"; do
+        if echo "$remote_url" | grep -iqE "$pattern"; then
+            echo ""
+            echo "❌ PUSH BLOCKED: Houzz namespace detected in remote '$remote_name'!"
+            echo ""
+            echo "   Remote URL: $remote_url"
+            echo ""
+            echo "   This repository cannot be pushed to Houzz-owned namespaces."
+            echo "   Remove this remote with: git remote remove $remote_name"
+            echo ""
+            exit 1
+        fi
+    done
+    # Check IVY patterns
+    for pattern in "${IVY_PATTERNS[@]}"; do
+        if echo "$remote_url" | grep -iqE "$pattern"; then
+            echo ""
+            echo "❌ PUSH BLOCKED: IVY namespace detected in remote '$remote_name'!"
+            echo ""
+            echo "   Remote URL: $remote_url"
+            echo ""
+            echo "   This repository cannot be pushed to IVY-owned namespaces."
+            echo "   Remove this remote with: git remote remove $remote_name"
+            echo ""
+            exit 1
+        fi
+    done
+done < <(git remote -v | grep "(push)" | awk '{print $1, $2}')
+
+exit 0
