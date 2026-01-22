@@ -111,7 +111,58 @@ Should I proceed?"
 - ✅ Use `api` client for internal API calls
 - ✅ Use `nav` helpers for routing
 - ✅ Extract shared code proactively
+- ✅ **Generate tests for ALL code written** (see below)
 - ✅ **Keep documentation and tests in sync** (see below)
+
+---
+
+## Test Generation Rule (CRITICAL)
+
+**Every code generation task MUST include corresponding unit tests.**
+
+### Test File Location
+
+| Code Location | Test Location |
+|---------------|---------------|
+| `app/components/Foo.tsx` | `tests/app/components/Foo.test.tsx` |
+| `lib/services/bar.ts` | `tests/lib/services/bar.test.ts` |
+| `app/api/baz/route.ts` | `tests/app/api/baz.test.ts` |
+| `lib/utils/qux.ts` | `tests/lib/utils/qux.test.ts` |
+
+### What to Test
+
+| Code Type | Test Coverage |
+|-----------|---------------|
+| Components | Renders, props, events, conditional rendering |
+| Services | Business logic, transformations, errors |
+| API Routes | Response format, status codes, validation |
+| Utilities | All inputs/outputs, edge cases |
+
+### Test Template
+
+```typescript
+/**
+ * Unit Tests for [file path]
+ */
+import { thing } from '@/path/to/module';
+
+jest.mock('@/lib/db', () => ({ ... }));  // Mock dependencies
+
+describe('Thing', () => {
+  it('handles normal input', () => { ... });
+  it('handles edge cases', () => { ... });
+  it('throws on invalid input', () => { ... });
+});
+```
+
+### Checklist
+
+```
+□ Created/updated tests for code written?
+□ Tests cover happy path AND error cases?
+□ External dependencies mocked?
+□ All tests pass? (npm test)
+```
 
 ---
 
@@ -400,6 +451,12 @@ CODE QUALITY (WARNING):
 □ Using .then()? → Convert to async/await
 □ Using console.log? → Remove or use logger
 □ Using require()? → Convert to ES import
+
+TESTS (REQUIRED):
+□ Test file created? → tests/[mirror path].test.ts(x)
+□ Happy path tested?
+□ Error cases tested?
+□ Dependencies mocked?
 ```
 
 **Import rules:**

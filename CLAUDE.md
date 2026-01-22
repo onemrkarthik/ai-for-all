@@ -81,7 +81,76 @@ CODE QUALITY (WARNING - should fix):
 - ✅ Propose the correct location before writing code
 - ✅ Use existing patterns from the codebase
 - ✅ Generate types for all data structures
+- ✅ **Generate tests for ALL code written** (see Test Generation Rule below)
 - ✅ **Keep documentation and tests in sync with code changes** (see below)
+
+### Test Generation Rule (CRITICAL)
+
+**Every code generation task MUST include corresponding unit tests.**
+
+This is NON-NEGOTIABLE. When generating code, Claude must:
+
+1. **Create test file alongside the code:**
+   - Component `app/components/Foo.tsx` → Test `tests/app/components/Foo.test.tsx`
+   - Service `lib/services/bar.ts` → Test `tests/lib/services/bar.test.ts`
+   - API route `app/api/baz/route.ts` → Test `tests/app/api/baz.test.ts`
+   - Utility `lib/utils/qux.ts` → Test `tests/lib/utils/qux.test.ts`
+
+2. **Test coverage requirements:**
+   - Test all exported functions/components
+   - Test happy path AND error cases
+   - Test edge cases (empty inputs, null values, etc.)
+   - Mock external dependencies (database, APIs, etc.)
+
+3. **Test file structure:**
+   ```typescript
+   /**
+    * Unit Tests for [file path]
+    */
+   import { functionName } from '@/path/to/module';
+
+   // Mock dependencies
+   jest.mock('@/lib/db', () => ({ ... }));
+
+   describe('FunctionName', () => {
+     it('handles normal input correctly', () => { ... });
+     it('handles edge case X', () => { ... });
+     it('throws error on invalid input', () => { ... });
+   });
+   ```
+
+4. **What to test by code type:**
+
+   | Code Type | What to Test |
+   |-----------|--------------|
+   | **Components** | Renders correctly, props work, events fire, conditional rendering |
+   | **Services** | Business logic, data transformations, error handling |
+   | **API Routes** | Response format, status codes, validation, error responses |
+   | **Utilities** | All input/output combinations, edge cases |
+   | **Hooks** | State changes, effect triggers, return values |
+
+5. **Testing patterns to use:**
+   ```typescript
+   // React components
+   import { render, screen, fireEvent } from '@testing-library/react';
+   
+   // API routes
+   import { NextRequest } from 'next/server';
+   import { GET, POST } from '@/app/api/route';
+   
+   // Services with DB
+   jest.mock('@/lib/db', () => ({
+     db: { prepare: jest.fn().mockReturnValue({ all: jest.fn(), get: jest.fn() }) }
+   }));
+   ```
+
+**Checklist before completing any task:**
+```
+□ Did I create/update tests for the code I wrote?
+□ Do tests cover happy path and error cases?
+□ Are external dependencies properly mocked?
+□ Do all tests pass? (npm test)
+```
 
 ### Documentation & Test Sync Rule (CRITICAL)
 
@@ -439,6 +508,13 @@ PATTERN CHECK:
 □ Using nav helpers (not hardcoded paths)?
 □ Types defined for all data?
 □ No any/@ts-ignore?
+
+TEST CHECK (REQUIRED):
+□ Test file created? tests/[mirror path].test.ts(x)
+□ Happy path tested?
+□ Error cases tested?
+□ Dependencies mocked?
+□ All tests pass?
 ```
 
 **Import Rules Visual:**
