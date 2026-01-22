@@ -13,7 +13,14 @@
     "db:reset": "rm -f local.db local.db-wal local.db-shm && tsx scripts/init-db.ts",
     "hooks:install": "bash scripts/install-hooks.sh",
     "setup": "npm install && npm run db:init && npm run hooks:install",
-    "postinstall": "bash scripts/install-hooks.sh && (test -f local.db || npm run db:init)"
+    "postinstall": "bash scripts/install-hooks.sh && (test -f local.db || npm run db:init)",
+    "prepare": "husky",
+    "type-check": "tsc --noEmit"
+  },
+  "lint-staged": {
+    "*.{js,jsx,ts,tsx}": [
+      "eslint --fix"
+    ]
   },
   "dependencies": {
     "@google/generative-ai": "^0.24.1",
@@ -28,8 +35,17 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
-    "eslint": "^9",
+    "@typescript-eslint/eslint-plugin": "^8.53.1",
+    "@typescript-eslint/parser": "^8.53.1",
+    "eslint": "^9.39.2",
     "eslint-config-next": "16.1.1",
+    "eslint-plugin-boundaries": "^5.3.1",
+    "eslint-plugin-import": "^2.32.0",
+    "husky": "^9.1.7",
+    "jest": "^30.2.0",
+    "lint-staged": "^16.2.7",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
     "tsx": "^4.21.0",
     "typescript": "^5"
   }

@@ -10,10 +10,10 @@ import { STYLE_GUIDES } from '@/lib/data/style-guides';
 import StyleCard from './StyleCard';
 
 export const metadata: Metadata = {
-  title: 'Kitchen Design Styles | Houzz',
+  title: 'Kitchen Design Styles | AI for All',
   description: 'Explore popular kitchen design styles including Modern, Contemporary, Transitional, Farmhouse, Traditional, and Scandinavian. Find inspiration and guidance for your kitchen remodel.',
   openGraph: {
-    title: 'Kitchen Design Styles | Houzz',
+    title: 'Kitchen Design Styles | AI for All',
     description: 'Discover the perfect kitchen style for your home. Expert guides for Modern, Contemporary, Transitional, Farmhouse, Traditional, and Scandinavian kitchens.',
     type: 'website',
   },
@@ -149,7 +149,7 @@ export default function StylesIndexPage() {
             '@type': 'CollectionPage',
             name: 'Kitchen Design Styles',
             description: 'Explore popular kitchen design styles for your remodel.',
-            url: 'https://houzz.com/styles',
+            url: 'https://ai-for-all.example.com/styles',
             mainEntity: {
               '@type': 'ItemList',
               itemListElement: styles.map((style, index) => ({
@@ -159,7 +159,7 @@ export default function StylesIndexPage() {
                   '@type': 'Article',
                   name: `${style.name} Kitchen Design Guide`,
                   description: style.tagline,
-                  url: `https://houzz.com/styles/${style.slug}`,
+                  url: `https://ai-for-all.example.com/styles/${style.slug}`,
                 },
               })),
             },

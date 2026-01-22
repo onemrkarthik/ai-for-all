@@ -32,12 +32,12 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
 
   if (!guide) {
     return {
-      title: 'Style Not Found | Houzz',
+      title: 'Style Not Found | AI for All',
     };
   }
 
   return {
-    title: `${guide.name} Kitchen Design Guide | Houzz`,
+    title: `${guide.name} Kitchen Design Guide | AI for All`,
     description: `${guide.tagline}. Expert tips on layout, cabinets, countertops, backsplash, flooring, appliances, colors, and lighting for ${guide.name.toLowerCase()} kitchens.`,
     openGraph: {
       title: `${guide.name} Kitchen Design Guide`,
@@ -300,15 +300,15 @@ export default async function StylePage({ params }: PageProps) {
             description: guide.overview,
             author: {
               '@type': 'Organization',
-              name: 'Houzz',
+              name: 'AI for All',
             },
             publisher: {
               '@type': 'Organization',
-              name: 'Houzz',
+              name: 'AI for All',
             },
             mainEntityOfPage: {
               '@type': 'WebPage',
-              '@id': `https://houzz.com/styles/${guide.slug}`,
+              '@id': `https://ai-for-all.example.com/styles/${guide.slug}`,
             },
             articleSection: 'Kitchen Design',
             keywords: [

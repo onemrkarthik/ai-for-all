@@ -1,0 +1,49 @@
+{
+  "scripts": {
+    "// STANDARDS ENFORCEMENT": "",
+    "check:standards": "ts-node scripts/check-standards.ts",
+    "type-check": "tsc --noEmit",
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    
+    "// TESTING": "",
+    "test": "jest",
+    "test:arch": "jest --testPathPattern=architecture",
+    
+    "// GIT HOOKS": "",
+    "prepare": "husky install",
+    "hooks:install": "husky install"
+  },
+  "lint-staged": {
+    "*.{ts,tsx}": [
+      "eslint --fix",
+      "prettier --write"
+    ],
+    "*.{json,md}": [
+      "prettier --write"
+    ]
+  },
+  "devDependencies": {
+    "// LINTING": "",
+    "eslint": "^8.57.0",
+    "eslint-plugin-boundaries": "^4.2.0",
+    "eslint-plugin-import": "^2.29.1",
+    "@typescript-eslint/eslint-plugin": "^7.0.0",
+    "@typescript-eslint/parser": "^7.0.0",
+    
+    "// FORMATTING": "",
+    "prettier": "^3.2.0",
+    
+    "// GIT HOOKS": "",
+    "husky": "^9.0.0",
+    "lint-staged": "^15.2.0",
+    
+    "// TESTING": "",
+    "jest": "^29.7.0",
+    "@types/jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    
+    "// SCRIPTS": "",
+    "ts-node": "^10.9.0"
+  }
+}

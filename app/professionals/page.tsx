@@ -4,11 +4,11 @@ import { getAllProfessionals } from '@/lib/services/professionals';
 import ProfessionalsList from './ProfessionalsList';
 
 export const metadata: Metadata = {
-    title: 'Find Kitchen Design Professionals | Houzz',
+    title: 'Find Kitchen Design Professionals | AI for All',
     description:
         'Browse our directory of kitchen design professionals. Find experienced designers and contractors with verified reviews and project portfolios.',
     openGraph: {
-        title: 'Find Kitchen Design Professionals | Houzz',
+        title: 'Find Kitchen Design Professionals | AI for All',
         description:
             'Connect with top-rated kitchen designers and contractors. View portfolios, read reviews, and find the perfect professional for your project.',
         type: 'website',
@@ -119,7 +119,7 @@ export default function ProfessionalsPage() {
                         '@type': 'CollectionPage',
                         name: 'Kitchen Design Professionals',
                         description: 'Directory of kitchen design professionals.',
-                        url: 'https://houzz.com/professionals',
+                        url: 'https://ai-for-all.example.com/professionals',
                         mainEntity: {
                             '@type': 'ItemList',
                             itemListElement: professionals.map((professional, index) => ({
@@ -129,7 +129,7 @@ export default function ProfessionalsPage() {
                                     '@type': 'LocalBusiness',
                                     name: professional.name,
                                     description: professional.company,
-                                    url: `https://houzz.com/professionals/${professional.id}`,
+                                    url: `https://ai-for-all.example.com/professionals/${professional.id}`,
                                     aggregateRating: professional.averageRating
                                         ? {
                                               '@type': 'AggregateRating',

@@ -13,7 +13,7 @@ Kitchen design gallery with AI-powered professional consultation. Full-stack Nex
 
 ```bash
 # 1. Clone and install (database auto-initializes on first install)
-git clone git@github.com:onemrkarthik/ai-for-all.git
+git clone git@github.com:karthik-houzz/ai-for-all.git
 cd ai-for-all
 npm install
 
@@ -104,7 +104,7 @@ The build includes a pre-check that scans for Houzz and IVY-related code pattern
 ### Push blocked with "Houzz/IVY namespace detected"
 Git hooks prevent pushing to Houzz or IVY-owned GitHub namespaces. If you see this error:
 1. You're trying to push to a forbidden organization (github.com/houzz/*, github.com/ivy/*, etc.)
-2. Use a different remote: `git remote set-url origin git@github.com:onemrkarthik/ai-for-all.git`
+2. Use a different remote: `git remote set-url origin <your-repo-url>`
 3. Hooks are installed via `npm run hooks:install` (auto-runs on npm install)
 
 ## Architecture
