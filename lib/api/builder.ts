@@ -51,7 +51,11 @@ export function buildUrl<
 
     if (queryEntries.length > 0) {
       const queryString = new URLSearchParams(
-        queryEntries.map(([key, value]) => [key, String(value)])
+        queryEntries.map(([key, value]) => {
+          // JSON stringify object values (e.g., filters)
+          const stringValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+          return [key, stringValue];
+        })
       ).toString();
 
       url += `?${queryString}`;

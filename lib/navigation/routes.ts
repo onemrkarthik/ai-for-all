@@ -96,6 +96,33 @@ export const routes = {
       pathParams: {} as { id: number },
     } satisfies Route,
   },
+
+  /**
+   * Photo Routes
+   */
+  photos: {
+    /**
+     * Kitchen ideas landing page
+     * GET /photos/kitchen-ideas-and-designs-phbr0-bp~t_709
+     */
+    ideas: {
+      path: '/photos/kitchen-ideas-and-designs-phbr0-bp~t_709',
+    } satisfies Route,
+  },
+
+  /**
+   * Style Routes
+   */
+  styles: {
+    /**
+     * Style landing page
+     * GET /styles/:style
+     */
+    detail: {
+      path: '/styles/:style',
+      pathParams: {} as { style: string },
+    } satisfies Route,
+  },
 } as const;
 
 export type Routes = typeof routes;
@@ -159,6 +186,47 @@ export const nav = {
     detail: (id: number): string => {
       return buildRoute(routes.professionals.detail.path, {
         pathParams: { id },
+      });
+    },
+  },
+
+  /**
+   * Photo navigation
+   */
+  photos: {
+    /**
+     * Navigate to kitchen ideas page
+     *
+     * @returns URL string
+     *
+     * @example
+     * ```ts
+     * nav.photos.ideas()  // "/photos/kitchen-ideas-and-designs-phbr0-bp~t_709"
+     * ```
+     */
+    ideas: (): string => {
+      return routes.photos.ideas.path;
+    },
+  },
+
+  /**
+   * Style navigation
+   */
+  styles: {
+    /**
+     * Navigate to style detail page
+     *
+     * @param style - Style name (e.g., "modern", "farmhouse")
+     * @returns URL string
+     *
+     * @example
+     * ```ts
+     * nav.styles.detail("modern")  // "/styles/modern"
+     * ```
+     */
+    detail: (style: string): string => {
+      return buildRoute(routes.styles.detail.path, {
+        pathParams: { style },
       });
     },
   },

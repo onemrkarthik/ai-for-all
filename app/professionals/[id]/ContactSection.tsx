@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { ContactPane } from '@/app/components/ContactPane';
 import { marked } from 'marked';
+import { api } from '@/lib/api';
 
 interface ContactSectionProps {
     professional: {
@@ -128,11 +129,9 @@ export function ContactSection({
                                     setShowContact(true);
                                     // Mark conversation as viewed when opening
                                     if (existingConversationId) {
-                                        fetch('/api/contact/mark-viewed', {
-                                            method: 'POST',
-                                            headers: { 'Content-Type': 'application/json' },
-                                            body: JSON.stringify({ conversationId: existingConversationId })
-                                        }).then(() => setHasNewMessages(false));
+                                        api.contact.markViewed({ conversationId: existingConversationId })
+                                            .then(() => setHasNewMessages(false))
+                                            .catch((error) => console.error('Failed to mark conversation as viewed:', error));
                                     }
                                 }}
                                 className="btn btn-primary"

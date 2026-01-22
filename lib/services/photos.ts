@@ -1,5 +1,13 @@
 import { db } from '@/lib/db';
 import { wrapUrl } from '@/lib/cdn';
+import type {
+  PhotoRow,
+  PhotoWithProfessionalRow,
+  PhotoAttributeRow,
+  ReviewRow,
+  RatingStatsRow,
+  CountRow
+} from '@/lib/db/types';
 
 export interface Photo {
     id: number;
@@ -74,7 +82,7 @@ const getAverageRating = db.prepare(`
 `);
 
 export function getPhotos({ offset, limit }: { offset: number; limit: number }): PhotoGridItem[] {
-    const rows = selectPhotos.all(limit, offset) as any[];
+    const rows = selectPhotos.all(limit, offset) as PhotoRow[];
 
     // Return lightweight objects (no nested joins)
     return rows.map(row => ({
@@ -86,14 +94,14 @@ export function getPhotos({ offset, limit }: { offset: number; limit: number }):
 }
 
 export function getPhotoById(id: number): Photo | null {
-    const row = selectPhotoById.get(id) as any;
+    const row = selectPhotoById.get(id) as PhotoWithProfessionalRow | undefined;
     if (!row) return null;
 
-    const attributes = selectAttributesByPhotoId.all(row.id) as any[];
+    const attributes = selectAttributesByPhotoId.all(row.id) as PhotoAttributeRow[];
 
     // Fetch reviews for this professional
-    const reviews = selectReviewsByProfessionalId.all(row.prof_id) as any[];
-    const ratingStats = getAverageRating.get(row.prof_id) as any;
+    const reviews = selectReviewsByProfessionalId.all(row.prof_id) as ReviewRow[];
+    const ratingStats = getAverageRating.get(row.prof_id) as RatingStatsRow | undefined;
 
     return {
         id: row.id,
@@ -168,7 +176,7 @@ export function getFilteredPhotos({
     });
     params.push(limit, offset);
 
-    const rows = db.prepare(query).all(...params) as any[];
+    const rows = db.prepare(query).all(...params) as PhotoRow[];
 
     return rows.map(row => ({
         id: row.id,
@@ -184,14 +192,14 @@ export function getFilteredPhotos({
 export function getFilteredPhotosCount(filters?: PhotoFilters): number {
     // If no filters, return total count
     if (!filters || Object.values(filters).every(v => v === null || v === undefined)) {
-        const result = db.prepare('SELECT COUNT(*) as count FROM photos').get() as any;
+        const result = db.prepare('SELECT COUNT(*) as count FROM photos').get() as CountRow;
         return result.count;
     }
 
     const activeFilters = Object.entries(filters).filter(([, value]) => value !== null && value !== undefined);
 
     if (activeFilters.length === 0) {
-        const result = db.prepare('SELECT COUNT(*) as count FROM photos').get() as any;
+        const result = db.prepare('SELECT COUNT(*) as count FROM photos').get() as CountRow;
         return result.count;
     }
 
@@ -211,6 +219,6 @@ export function getFilteredPhotosCount(filters?: PhotoFilters): number {
         params.push(label, value as string);
     });
 
-    const result = db.prepare(query).get(...params) as any;
+    const result = db.prepare(query).get(...params) as CountRow;
     return result.count;
 }

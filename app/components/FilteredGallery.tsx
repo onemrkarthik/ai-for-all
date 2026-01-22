@@ -6,6 +6,7 @@ import { PhotoCard } from './PhotoCard';
 import { ProCTACard } from './ProCTACard';
 import { Item } from '@/lib/data';
 import { usePhotoGalleryActions } from './PhotoGallery';
+import { api } from '@/lib/api';
 
 const ITEMS_PER_PAGE = 100;
 
@@ -13,13 +14,6 @@ interface FilteredGalleryProps {
     children: ReactNode;
     totalCount?: number;
     currentPage?: number;
-}
-
-interface FeedResponse {
-    photos: Item[];
-    totalCount?: number;
-    offset: number;
-    limit: number;
 }
 
 export function FilteredGallery({ children, totalCount: initialTotalCount = 100, currentPage = 1 }: FilteredGalleryProps) {
@@ -37,11 +31,11 @@ export function FilteredGallery({ children, totalCount: initialTotalCount = 100,
         setIsLoading(true);
         try {
             const offset = (page - 1) * ITEMS_PER_PAGE;
-            const filterParams = JSON.stringify(filters);
-            const response = await fetch(
-                `/api/feed?offset=${offset}&limit=${ITEMS_PER_PAGE}&filters=${encodeURIComponent(filterParams)}`
-            );
-            const data: FeedResponse = await response.json();
+            const data = await api.feed.list({
+                offset,
+                limit: ITEMS_PER_PAGE,
+                filters
+            });
 
             setFilteredPhotos(data.photos);
             setFilteredTotalCount(data.totalCount ?? null);

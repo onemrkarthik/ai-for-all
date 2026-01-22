@@ -1,32 +1,12 @@
 import { Suspense } from 'react';
-import Image from 'next/image';
 import { notFound } from 'next/navigation';
 import { ContactSection } from './ContactSection';
 import { PhotoCard } from './PhotoCard';
 import { PhotoGalleryProvider } from '@/app/components/PhotoGallery';
 import { PhotoGalleryRegistrar } from './PhotoGalleryRegistrar';
 import { Item } from '@/lib/data';
-
-interface ProfessionalDetails {
-    id: number;
-    name: string;
-    company: string;
-    averageRating?: number;
-    reviewCount?: number;
-    reviews?: Array<{
-        id: number;
-        reviewerName: string;
-        rating: number;
-        comment: string;
-        createdAt: string;
-    }>;
-    photos?: Array<{
-        id: number;
-        title: string;
-        image: string;
-    }>;
-    totalProjects?: number;
-}
+import { getProfessionalById, ProfessionalDetails } from '@/lib/services/professionals';
+import { getLatestConversationByProfessionalId } from '@/lib/services/chat';
 
 interface ConversationData {
     conversation?: {
@@ -36,34 +16,28 @@ interface ConversationData {
     };
 }
 
-// Fetch professional data on the server
-async function getProfessional(id: string): Promise<ProfessionalDetails | null> {
-    try {
-        const response = await fetch(`http://localhost:3000/api/professionals/${id}`, {
-            cache: 'no-store', // Always fetch fresh data
-        });
-
-        if (!response.ok) return null;
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching professional:', error);
-        return null;
-    }
+// Fetch professional data directly from service layer (server component)
+function getProfessional(id: string): ProfessionalDetails | null {
+    const numericId = parseInt(id, 10);
+    if (isNaN(numericId)) return null;
+    return getProfessionalById(numericId);
 }
 
-// Fetch conversation data on the server
-async function getConversation(professionalId: string): Promise<ConversationData> {
-    try {
-        const response = await fetch(`http://localhost:3000/api/contact/by-professional?professionalId=${professionalId}`, {
-            cache: 'no-store', // Always fetch fresh data
-        });
+// Fetch conversation data directly from service layer (server component)
+function getConversation(professionalId: string): ConversationData {
+    const numericId = parseInt(professionalId, 10);
+    if (isNaN(numericId)) return {};
 
-        if (!response.ok) return {};
-        return await response.json();
-    } catch (error) {
-        console.error('Error fetching conversation:', error);
-        return {};
-    }
+    const conversation = getLatestConversationByProfessionalId(numericId);
+    if (!conversation) return {};
+
+    return {
+        conversation: {
+            id: conversation.id,
+            last_summary: conversation.last_summary,
+            has_new_messages: conversation.has_new_messages ?? false,
+        }
+    };
 }
 
 // Loading component for contact section
@@ -97,11 +71,11 @@ function ContactSectionSkeleton() {
 }
 
 // Server Component: Contact section with data fetching
-async function ContactSectionWithData({ professionalId, professional }: {
+function ContactSectionWithData({ professionalId, professional }: {
     professionalId: string;
     professional: { id: number; name: string; company: string };
 }) {
-    const conversationData = await getConversation(professionalId);
+    const conversationData = getConversation(professionalId);
 
     return (
         <ContactSection
@@ -119,7 +93,7 @@ export default async function ProfessionalPage({
     params: Promise<{ id: string }>;
 }) {
     const { id } = await params;
-    const professional = await getProfessional(id);
+    const professional = getProfessional(id);
 
     if (!professional) {
         notFound();

@@ -6,13 +6,24 @@
  */
 
 // Re-export existing types from services
-import type { Photo as ServicePhoto, PhotoGridItem as ServicePhotoGridItem } from '@/lib/services/photos';
+import type { Photo as ServicePhoto, PhotoGridItem as ServicePhotoGridItem, PhotoFilters as ServicePhotoFilters } from '@/lib/services/photos';
 import type { ChatMessage as ServiceChatMessage, Conversation as ServiceConversation } from '@/lib/services/chat';
 
 export type Photo = ServicePhoto;
 export type PhotoGridItem = ServicePhotoGridItem;
+export type PhotoFilters = ServicePhotoFilters;
 export type ChatMessage = ServiceChatMessage;
 export type Conversation = ServiceConversation;
+
+/**
+ * Response from the feed endpoint
+ */
+export interface FeedResponse {
+  photos: PhotoGridItem[];
+  totalCount?: number;
+  offset: number;
+  limit: number;
+}
 
 /**
  * Professional details with extended information

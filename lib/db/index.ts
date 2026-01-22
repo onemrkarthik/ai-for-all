@@ -167,6 +167,22 @@ export {
 
 export type { TableDefinition, DatabaseConfig, DatabaseType };
 
+// Re-export database row types
+export type {
+  ProfessionalRow,
+  PhotoRow,
+  PhotoWithProfessionalRow,
+  PhotoAttributeRow,
+  ReviewRow,
+  RatingStatsRow,
+  CountRow,
+  ConversationRow,
+  MessageRow,
+  NewMessagesCountRow,
+  ProfessionalPhotoRow,
+  ConversationWithNewMessageCountRow,
+} from './types';
+
 // Re-export db from the old location for backwards compatibility
 // This maintains compatibility with existing imports like: import { db } from '@/lib/db'
 export { db as default };

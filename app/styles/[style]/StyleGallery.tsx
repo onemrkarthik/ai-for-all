@@ -9,6 +9,8 @@
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
+import { api } from '@/lib/api';
+import { nav } from '@/lib/navigation';
 
 interface Photo {
   id: number;
@@ -114,9 +116,9 @@ function PhotoCard({ photo }: { photo: Photo }) {
         >
           {photo.title}
         </h3>
-        {photo.professional_name && (
+        {photo.professional_name && photo.professional_id && (
           <Link
-            href={`/professionals/${photo.professional_id}`}
+            href={nav.professionals.detail(photo.professional_id)}
             style={{
               fontSize: '0.85rem',
               color: 'var(--primary)',
@@ -143,17 +145,18 @@ export default function StyleGallery({ style }: StyleGalleryProps) {
         setLoading(true);
         setError(null);
 
-        const filters = JSON.stringify({ Style: style });
-        const response = await fetch(
-          `/api/feed?filters=${encodeURIComponent(filters)}&limit=12`
-        );
+        const data = await api.feed.list({
+          filters: { Style: style },
+          limit: 12
+        });
 
-        if (!response.ok) {
-          throw new Error('Failed to fetch photos');
-        }
-
-        const data = await response.json();
-        setPhotos(data.photos || []);
+        // Map the response to match expected Photo interface
+        const mappedPhotos = data.photos.map(photo => ({
+          id: photo.id,
+          image_url: photo.image,
+          title: photo.title,
+        }));
+        setPhotos(mappedPhotos);
       } catch (err) {
         console.error('Error fetching photos:', err);
         setError('Unable to load photos. Please try again later.');
@@ -202,7 +205,7 @@ export default function StyleGallery({ style }: StyleGalleryProps) {
           >
             <p>No photos found for {style} style kitchens.</p>
             <Link
-              href="/photos/kitchen-ideas-and-designs-phbr0-bp~t_709"
+              href={nav.photos.ideas()}
               style={{
                 color: 'var(--primary)',
                 textDecoration: 'none',

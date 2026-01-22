@@ -3,10 +3,11 @@
 import { useState } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
+import { nav } from '@/lib/navigation';
 
 const NAV_ITEMS = [
     { label: 'Find Pros', href: '/professionals', hasDropdown: true },
-    { label: 'Ideas', href: '/photos/kitchen-ideas-and-designs-phbr0-bp~t_709', hasDropdown: true },
+    { label: 'Ideas', href: nav.photos.ideas(), hasDropdown: true },
     { label: 'Shop', href: '#', hasDropdown: true },
 ];
 

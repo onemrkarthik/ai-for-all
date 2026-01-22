@@ -7,7 +7,7 @@
 
 import { routes } from './config';
 import { buildUrl } from './builder';
-import type { ErrorResponse } from './types';
+import type { ErrorResponse, PhotoFilters, FeedResponse } from './types';
 
 /**
  * Custom error class for API errors
@@ -110,21 +110,32 @@ export const api = {
    */
   feed: {
     /**
-     * Get paginated photo feed
+     * Get paginated photo feed with optional filters
      *
-     * @param params - Optional pagination parameters
+     * @param params - Optional pagination and filter parameters
      * @param params.offset - Starting index (default: 0)
      * @param params.limit - Number of items (default: 20)
-     * @returns Array of photo grid items
+     * @param params.filters - Optional photo attribute filters
+     * @returns Feed response with photos array and metadata
      *
      * @example
      * ```ts
-     * const photos = await api.feed.list({ offset: 0, limit: 20 });
+     * // Basic pagination
+     * const response = await api.feed.list({ offset: 0, limit: 20 });
+     * console.log(response.photos);
+     *
+     * // With filters
+     * const filtered = await api.feed.list({
+     *   offset: 0,
+     *   limit: 20,
+     *   filters: { Style: 'Modern' }
+     * });
+     * console.log(filtered.photos, filtered.totalCount);
      * ```
      */
-    list: async (params?: { offset?: number; limit?: number }) => {
+    list: async (params?: { offset?: number; limit?: number; filters?: PhotoFilters }): Promise<FeedResponse> => {
       const url = buildUrl(routes.feed.list, { queryParams: params });
-      return apiFetch<typeof routes.feed.list.response>(url);
+      return apiFetch<FeedResponse>(url);
     },
   },
 

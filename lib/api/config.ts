@@ -8,6 +8,8 @@
 import type {
   PhotoGridItem,
   Photo,
+  PhotoFilters,
+  FeedResponse,
   ProfessionalDetails,
   ConversationResponse,
   ContactInitRequest,
@@ -45,14 +47,14 @@ export const routes = {
    */
   feed: {
     /**
-     * Get paginated photo list
-     * GET /api/feed?offset=0&limit=20
+     * Get paginated photo list with optional filters
+     * GET /api/feed?offset=0&limit=20&filters={...}
      */
     list: {
       path: '/api/feed',
       method: 'GET',
-      queryParams: {} as { offset?: number; limit?: number },
-      response: {} as PhotoGridItem[],
+      queryParams: {} as { offset?: number; limit?: number; filters?: PhotoFilters },
+      response: {} as FeedResponse,
     } satisfies RouteConfig,
   },
 

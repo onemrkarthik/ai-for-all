@@ -133,11 +133,12 @@ export async function generateAIResponse(photo: Photo | null, history: ChatMessa
                 isSufficient: false
             };
         }
-    } catch (error: any) {
+    } catch (error: unknown) {
         console.error("AI Generation Error:", error);
 
         // Specialized handling for rate limiting (429)
-        if (error?.status === 429 || error?.message?.includes("429")) {
+        const errorObj = error as { status?: number; message?: string };
+        if (errorObj?.status === 429 || errorObj?.message?.includes("429")) {
             return {
                 response: "Wow, we're getting a lot of design interest right now! I'm taking a quick breather. Please send your message again in a few seconds.",
                 isSufficient: false

@@ -4,6 +4,7 @@ import { useEffect, useCallback, useRef } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
 import { usePhotoGalleryActions } from './PhotoGallery';
 import { Item } from '@/lib/data';
+import { api } from '@/lib/api';
 
 interface GalleryPageControllerProps {
     currentPage: number;
@@ -51,8 +52,7 @@ export function GalleryPageController({ currentPage, itemsPerPage, totalPages }:
 
         try {
             const offset = (pageToLoad - 1) * itemsPerPage;
-            const response = await fetch(`/api/feed?offset=${offset}&limit=${itemsPerPage}`);
-            const data = await response.json();
+            const data = await api.feed.list({ offset, limit: itemsPerPage });
 
             // Mark this page as loaded and increment for next load
             loadedPagesRef.current.push(pageToLoad);

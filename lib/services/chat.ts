@@ -1,4 +1,5 @@
 import { db } from '@/lib/db';
+import type { ConversationRow, MessageRow, NewMessagesCountRow } from '@/lib/db/types';
 
 export interface ChatMessage {
     id: number;
@@ -79,20 +80,20 @@ export function updateConversationSummary(conversationId: number, summary: strin
 }
 
 export function getLatestConversationByProfessionalId(professionalId: number): Conversation | null {
-    const convo = getLatestConversationByProfessionalStmt.get(professionalId) as any;
+    const convo = getLatestConversationByProfessionalStmt.get(professionalId) as ConversationRow | undefined;
     if (!convo) return null;
 
-    const messages = getMessagesStmt.all(convo.id) as ChatMessage[];
+    const messages = getMessagesStmt.all(convo.id) as MessageRow[];
 
     // Check if there are new messages from the professional
-    const newMessagesResult = checkNewMessagesStmt.get(convo.id, convo.id) as any;
-    const hasNewMessages = newMessagesResult?.count > 0;
+    const newMessagesResult = checkNewMessagesStmt.get(convo.id, convo.id) as NewMessagesCountRow | undefined;
+    const hasNewMessages = (newMessagesResult?.count ?? 0) > 0;
 
     return {
         id: convo.id,
         professional_id: convo.professional_id,
-        last_summary: convo.last_summary,
-        last_viewed_at: convo.last_viewed_at,
+        last_summary: convo.last_summary ?? undefined,
+        last_viewed_at: convo.last_viewed_at ?? undefined,
         has_new_messages: hasNewMessages,
         messages
     };
@@ -109,20 +110,20 @@ export function addMessage(conversationId: number, content: string, role: 'user'
 }
 
 export function getConversation(conversationId: number): Conversation | null {
-    const convo = getConversationStmt.get(conversationId) as any;
+    const convo = getConversationStmt.get(conversationId) as ConversationRow | undefined;
     if (!convo) return null;
 
-    const messages = getMessagesStmt.all(conversationId) as ChatMessage[];
+    const messages = getMessagesStmt.all(conversationId) as MessageRow[];
 
     // Check if there are new messages from the professional
-    const newMessagesResult = checkNewMessagesStmt.get(conversationId, conversationId) as any;
-    const hasNewMessages = newMessagesResult?.count > 0;
+    const newMessagesResult = checkNewMessagesStmt.get(conversationId, conversationId) as NewMessagesCountRow | undefined;
+    const hasNewMessages = (newMessagesResult?.count ?? 0) > 0;
 
     return {
         id: convo.id,
         professional_id: convo.professional_id,
-        last_summary: convo.last_summary,
-        last_viewed_at: convo.last_viewed_at,
+        last_summary: convo.last_summary ?? undefined,
+        last_viewed_at: convo.last_viewed_at ?? undefined,
         has_new_messages: hasNewMessages,
         messages
     };

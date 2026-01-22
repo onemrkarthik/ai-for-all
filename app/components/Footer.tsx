@@ -1,4 +1,5 @@
 import Link from 'next/link';
+import { nav } from '@/lib/navigation';
 
 export default function Footer() {
     const currentYear = new Date().getFullYear();
@@ -52,7 +53,7 @@ export default function Footer() {
                         >
                             <li>
                                 <Link
-                                    href="/photos/kitchen-ideas-and-designs-phbr0-bp~t_709"
+                                    href={nav.photos.ideas()}
                                     style={{
                                         color: 'rgba(255, 255, 255, 0.85)',
                                         textDecoration: 'none',
@@ -115,7 +116,7 @@ export default function Footer() {
                         >
                             <li>
                                 <Link
-                                    href="/styles/modern"
+                                    href={nav.styles.detail('modern')}
                                     style={{
                                         color: 'rgba(255, 255, 255, 0.85)',
                                         textDecoration: 'none',
@@ -127,7 +128,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <Link
-                                    href="/styles/farmhouse"
+                                    href={nav.styles.detail('farmhouse')}
                                     style={{
                                         color: 'rgba(255, 255, 255, 0.85)',
                                         textDecoration: 'none',
@@ -139,7 +140,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <Link
-                                    href="/styles/contemporary"
+                                    href={nav.styles.detail('contemporary')}
                                     style={{
                                         color: 'rgba(255, 255, 255, 0.85)',
                                         textDecoration: 'none',

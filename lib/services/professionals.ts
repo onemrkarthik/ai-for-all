@@ -1,4 +1,11 @@
 import { db } from '@/lib/db';
+import type {
+  ProfessionalRow,
+  ReviewRow,
+  RatingStatsRow,
+  CountRow,
+  ProfessionalPhotoRow
+} from '@/lib/db/types';
 
 export interface ProfessionalListItem {
     id: number;
@@ -70,15 +77,15 @@ const getProjectCount = db.prepare(`
 `);
 
 export function getProfessionalById(id: number): ProfessionalDetails | null {
-    const professional = selectProfessionalById.get(id) as any;
+    const professional = selectProfessionalById.get(id) as ProfessionalRow | undefined;
     if (!professional) return null;
 
     // Fetch reviews
-    const reviews = selectReviewsByProfessionalId.all(id) as any[];
-    const ratingStats = getAverageRating.get(id) as any;
+    const reviews = selectReviewsByProfessionalId.all(id) as ReviewRow[];
+    const ratingStats = getAverageRating.get(id) as RatingStatsRow | undefined;
 
     // Fetch photos
-    const photos = selectPhotosByProfessionalId.all(id) as any[];
+    const photos = selectPhotosByProfessionalId.all(id) as ProfessionalPhotoRow[];
 
     return {
         id: professional.id,
@@ -103,11 +110,11 @@ export function getProfessionalById(id: number): ProfessionalDetails | null {
 }
 
 export function getAllProfessionals(): ProfessionalListItem[] {
-    const professionals = selectAllProfessionals.all() as any[];
+    const professionals = selectAllProfessionals.all() as ProfessionalRow[];
 
     return professionals.map(professional => {
-        const ratingStats = getAverageRating.get(professional.id) as any;
-        const projectStats = getProjectCount.get(professional.id) as any;
+        const ratingStats = getAverageRating.get(professional.id) as RatingStatsRow | undefined;
+        const projectStats = getProjectCount.get(professional.id) as CountRow | undefined;
 
         return {
             id: professional.id,

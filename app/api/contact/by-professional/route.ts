@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/lib/db';
+import type { ConversationWithNewMessageCountRow, MessageRow } from '@/lib/db/types';
 
 const getLatestConversationByProfessionalStmt = db.prepare(`
     SELECT c.*,
@@ -30,13 +31,13 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const conversation = getLatestConversationByProfessionalStmt.get(parseInt(professionalId)) as any;
+        const conversation = getLatestConversationByProfessionalStmt.get(parseInt(professionalId)) as ConversationWithNewMessageCountRow | undefined;
 
         if (!conversation) {
             return NextResponse.json({ conversation: null });
         }
 
-        const messages = getMessagesStmt.all(conversation.id) as any[];
+        const messages = getMessagesStmt.all(conversation.id) as MessageRow[];
 
         return NextResponse.json({
             conversation: {
