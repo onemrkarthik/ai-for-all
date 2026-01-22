@@ -63,7 +63,7 @@ interface PhotoBatchProps {
  *   <PhotoBatch batchId={2} offset={20} limit={20} delay={2000} />
  * </Suspense>
  */
-export async function PhotoBatch({ batchId, offset, limit, delay, initialData, showCTACard = false }: PhotoBatchProps) {
+export async function PhotoBatch({ batchId: _batchId, offset, limit, delay, initialData, showCTACard = false }: PhotoBatchProps) {
     // Use pre-fetched data if available (SSR), otherwise fetch on-demand (streaming)
     const data = initialData || await fetchLiveStreamData(offset, limit, delay);
 

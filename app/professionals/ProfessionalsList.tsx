@@ -174,7 +174,7 @@ export default function ProfessionalsList({ professionals }: ProfessionalsListPr
                             margin: 0,
                         }}
                     >
-                        No professionals found matching "{searchQuery}"
+                        No professionals found matching &ldquo;{searchQuery}&rdquo;
                     </p>
                 </div>
             )}

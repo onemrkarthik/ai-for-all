@@ -6,7 +6,6 @@
  */
 
 import type {
-  PhotoGridItem,
   Photo,
   PhotoFilters,
   FeedResponse,

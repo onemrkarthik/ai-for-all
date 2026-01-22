@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-require-imports */
 const Database = require('better-sqlite3');
 const path = require('path');
 const fs = require('fs');
@@ -121,6 +122,7 @@ const insertPhoto = db.prepare('INSERT INTO photos (id, title, source, image_url
 const insertPhotoAttribute = db.prepare('INSERT INTO photo_attributes (photo_id, label, value) VALUES (@photoId, @label, @value)');
 const insertPhotoProfessional = db.prepare('INSERT INTO photos_professionals (photo_id, professional_id) VALUES (@photoId, @professionalId)');
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 const runTransaction = db.transaction((items: any[]) => {
     // 1. Insert Professionals
     const proIds = [];

@@ -46,7 +46,7 @@ export function buildUrl<
   // Add query parameters
   if (params?.queryParams) {
     const queryEntries = Object.entries(params.queryParams).filter(
-      ([_, value]) => value !== undefined && value !== null
+      ([_key, value]) => value !== undefined && value !== null
     );
 
     if (queryEntries.length > 0) {

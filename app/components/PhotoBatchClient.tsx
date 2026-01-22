@@ -71,7 +71,7 @@ interface PhotoBatchClientProps {
  *   initialData={false}
  * />
  */
-export function PhotoBatchClient({ data, offset, limit, initialData, delay, showCTACard = false }: PhotoBatchClientProps) {
+export function PhotoBatchClient({ data, offset, limit: _limit, initialData, delay: _delay, showCTACard = false }: PhotoBatchClientProps) {
     // Optimization: Use actions-only hook to avoid re-rendering when 'photos' state changes
     const { registerPhotos, openPhoto } = usePhotoGalleryActions();
 

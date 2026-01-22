@@ -126,7 +126,7 @@ export async function generateAIResponse(photo: Photo | null, history: ChatMessa
         try {
             const cleanedJson = text.replace(/```json\n?|\n?```/g, "").trim();
             return JSON.parse(cleanedJson);
-        } catch (e) {
+        } catch (_e) {
             console.error("Failed to parse AI JSON response:", text);
             return {
                 response: text,

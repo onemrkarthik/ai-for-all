@@ -127,7 +127,7 @@ export function ContactPane({ professional, onBack, initialConversationId }: Con
             <div style={{ height: '100%', display: 'flex', flexDirection: 'column' }}>
                 <div style={{ padding: '1rem 1.25rem', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center' }}>
                     <button onClick={onBack} style={{ background: 'none', border: 'none', cursor: 'pointer', marginRight: '0.5rem', fontSize: '1.2rem' }}>←</button>
-                    <h3 style={{ fontSize: '0.9375rem', fontWeight: 600 }}>Message {professional.name}'s Assistant</h3>
+                    <h3 style={{ fontSize: '0.9375rem', fontWeight: 600 }}>Message {professional.name}&apos;s Assistant</h3>
                 </div>
 
                 <div style={{ padding: '1.25rem', flex: 1 }}>

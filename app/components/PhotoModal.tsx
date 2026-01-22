@@ -18,7 +18,7 @@
 
 'use client';
 
-import { useEffect, useState, useMemo } from 'react';
+import { useEffect, useState } from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { Item } from '@/lib/data';
@@ -122,7 +122,7 @@ const sidebarStyles = {
     position: 'relative',
 } as const;
 
-const navButtonBaseStyles = {
+const _navButtonBaseStyles = {
     position: 'absolute',
     top: '50%',
     transform: 'translateY(-50%)',

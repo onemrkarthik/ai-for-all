@@ -16,7 +16,7 @@ interface FilteredGalleryProps {
     currentPage?: number;
 }
 
-export function FilteredGallery({ children, totalCount: initialTotalCount = 100, currentPage = 1 }: FilteredGalleryProps) {
+export function FilteredGallery({ children, totalCount: initialTotalCount = 100, currentPage: _currentPage = 1 }: FilteredGalleryProps) {
     const [activeFilters, setActiveFilters] = useState<FilterValues>({});
     const [filteredPhotos, setFilteredPhotos] = useState<Item[] | null>(null);
     const [filteredTotalCount, setFilteredTotalCount] = useState<number | null>(null);
