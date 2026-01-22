@@ -13,7 +13,7 @@ Kitchen design gallery with AI-powered professional consultation. Full-stack Nex
 
 ```bash
 # 1. Clone and install (database auto-initializes on first install)
-git clone git@github.com:karthik-houzz/ai-for-all.git
+git clone git@github.com:onemrkarthik/ai-for-all.git
 cd ai-for-all
 npm install
 
@@ -47,95 +47,126 @@ npm run db:init          # Initialize database with seed data
 npm run db:reset         # Delete and recreate database (fresh start)
 
 # Build & Production
-npm run build            # Create production build (includes Houzz code check)
+npm run build            # Create production build (includes code check)
 npm run start            # Run production server
 
-# Linting & Checks
+# Testing & Linting
 npm run lint             # Run ESLint
+npm run test             # Run Jest tests (architecture tests)
+npm run type-check       # Run TypeScript type checking
 npm run check:no-houzz   # Verify no Houzz/IVY ecosystem code is included
 
-# Git Hooks
-npm run hooks:install    # Install git hooks (auto-runs on npm install)
+# Git Hooks (auto-configured)
+# Pre-commit: Runs lint-staged (ESLint --fix on staged files)
+# Pre-push: Runs type-check and architecture tests
 
 # Full Setup (install + db init + hooks)
 npm run setup            # Run after cloning if npm install didn't auto-init
 ```
 
-## Troubleshooting
+## Project Structure
 
-### "no such table: photos" error
-The database wasn't initialized. Run:
-```bash
-npm run db:init
 ```
+app/                          # INTERFACE LAYER
+├── api/                      # Backend API routes
+│   ├── contact/              # Contact form endpoints (init, chat, latest, etc.)
+│   ├── feed/                 # Photo feed endpoints
+│   ├── photos/               # Photo CRUD endpoints
+│   └── professionals/        # Professional endpoints
+├── components/               # Shared React UI components
+│   ├── ContactPane.tsx       # AI chat interface
+│   ├── FilterBar.tsx         # Gallery filtering
+│   ├── Header.tsx            # Site header
+│   ├── Footer.tsx            # Site footer
+│   ├── PhotoBatch.tsx        # Server component for photo batches
+│   ├── PhotoBatchClient.tsx  # Client renderer for photo batches
+│   ├── PhotoCard.tsx         # Individual photo card
+│   ├── PhotoGallery.tsx      # Gallery with context provider
+│   ├── PhotoModal.tsx        # Photo detail modal
+│   └── Skeleton.tsx          # Loading skeletons
+├── professionals/            # Professional feature
+│   ├── [id]/                 # Dynamic professional profile pages
+│   └── page.tsx              # Professionals listing page
+├── photos/                   # Photos feature
+│   └── [slug]/               # Individual photo detail pages
+├── styles/                   # Kitchen styles feature
+│   ├── [style]/              # Dynamic style pages (Modern, Traditional, etc.)
+│   └── page.tsx              # Styles index page
+├── layout.tsx                # Root layout
+├── page.tsx                  # Home page
+└── globals.css               # Global styles
 
-### Database corruption or stale data
-Reset the database completely:
-```bash
-npm run db:reset
+lib/                          # LOGIC + DATA LAYERS
+├── api/                      # Type-safe API client
+│   ├── builder.ts            # URL construction utilities
+│   ├── client.ts             # API client methods
+│   ├── config.ts             # Route configuration
+│   ├── types.ts              # Request/response types
+│   └── index.ts              # Public exports
+├── navigation/               # Type-safe routing
+│   ├── routes.ts             # Route definitions
+│   └── index.ts              # Public exports (nav helpers)
+├── services/                 # Business logic + database queries
+│   ├── chat.ts               # Chat/conversation operations
+│   ├── photos.ts             # Photo operations
+│   └── professionals.ts      # Professional operations
+├── db/                       # Database layer
+│   ├── connection.ts         # Database connection
+│   ├── schema.ts             # Schema definitions
+│   ├── config.ts             # Database configuration
+│   ├── types.ts              # Database types
+│   └── index.ts              # Public exports
+├── data/                     # Static data
+│   └── style-guides.ts       # Kitchen style guide content
+├── utils/                    # Utility functions
+│   └── slug.ts               # URL slug utilities
+├── ai.ts                     # Google Gemini AI integration
+├── cdn.ts                    # CDN/image utilities
+└── data.ts                   # Data fetching orchestration
+
+scripts/                      # Build & setup scripts
+├── check-no-houzz-code.ts    # Houzz/IVY code detection
+├── check-standards.ts        # Standards compliance check
+├── init-db.ts                # Database initialization
+├── install-hooks.sh          # Git hooks installer
+└── git-hooks/                # Custom git hooks
+    └── pre-push              # Pre-push verification
+
+tests/                        # Test files
+└── architecture.test.ts      # Architecture compliance tests
+
+.husky/                       # Husky git hooks
+├── pre-commit                # Lint-staged on commit
+└── pre-push                  # Type-check + tests on push
 ```
-
-### Port 3000 already in use
-Kill the existing process:
-```bash
-lsof -ti:3000 | xargs kill -9
-npm run dev
-```
-
-### Image 404 errors
-The database may have stale image URLs. Reset with fresh data:
-```bash
-npm run db:reset
-```
-
-### better-sqlite3 compilation errors
-This native module requires build tools. On macOS:
-```bash
-xcode-select --install
-```
-
-### Build fails with "Houzz/IVY ecosystem code detected"
-The build includes a pre-check that scans for Houzz and IVY-related code patterns. If you see this error:
-1. Run `npm run check:no-houzz` to see specific violations
-2. Remove or replace any `@houzz/*` or `@ivy/*` package imports
-3. Replace `houzz.com` or `ivy.co` URLs with appropriate alternatives
-4. The check script is at `scripts/check-no-houzz-code.ts` - see allowlist patterns there
-
-### Push blocked with "Houzz/IVY namespace detected"
-Git hooks prevent pushing to Houzz or IVY-owned GitHub namespaces. If you see this error:
-1. You're trying to push to a forbidden organization (github.com/houzz/*, github.com/ivy/*, etc.)
-2. Use a different remote: `git remote set-url origin <your-repo-url>`
-3. Hooks are installed via `npm run hooks:install` (auto-runs on npm install)
 
 ## Architecture
 
 For detailed architecture documentation, see `ARCHITECTURE.md`.
 
-### Key Directory Structure
+### Three-Layer Architecture
 
-- `app/` - Next.js App Router pages and API routes
-  - `api/` - Backend API routes (contact, feed, photos, professionals)
-  - `components/` - React components (PhotoGallery, PhotoModal, ContactPane, etc.)
-  - `professionals/[id]/` - Professional profile pages with server-side streaming
-  - `styles/[style]/` - Kitchen style landing pages (Modern, Traditional, etc.)
-  - `photos/[slug]/` - Individual photo detail pages
-- `lib/` - Business logic and utilities
-  - `api/` - Type-safe API client (`api.photos.get()`, `api.contact.init()`, etc.)
-  - `navigation/` - Type-safe client navigation (`nav.home.index()`, `nav.professionals.detail()`)
-  - `services/` - Database query services (photos.ts, chat.ts)
-  - `db/` - Database connection (index.ts) and schema definitions (schema.ts)
-  - `ai.ts` - Google Gemini integration
-- `scripts/` - Database initialization scripts
+```
+INTERFACE  → app/, app/api/, app/components/
+LOGIC      → lib/api/, lib/navigation/, lib/services/
+DATA       → lib/db/, lib/services/ (query functions)
+```
+
+### Key Principles
+
+1. **Feature Isolation** - Features cannot import from other features
+2. **Single Responsibility** - Each file/function does ONE thing
+3. **Type Safety** - Use `api` client and `nav` helpers, not raw fetch/hardcoded paths
 
 ### Server vs Client Components
 
-- Server Components (default): Data fetching, no 'use client' directive
-- Client Components: Interactive elements require `'use client'` directive at top of file
-- Components in `app/components/` are mostly client components for interactivity
+- **Server Components** (default): Data fetching, no 'use client' directive
+- **Client Components**: Interactive elements require `'use client'` at top
+- Components in `app/components/` are mostly client components
 
 ### Type-Safe Patterns
 
-**API Calls** - Use the typed API client instead of raw fetch:
+**API Calls** - Use the typed API client:
 ```typescript
 import { api } from '@/lib/api';
 const photo = await api.photos.get(123);  // Typed response
@@ -151,9 +182,77 @@ import { nav } from '@/lib/navigation';
 
 ### Database
 
-SQLite with WAL mode. Schema defined in `lib/db/schema.ts`. Tables: photos, photo_attributes, professionals, photos_professionals, reviews, conversations, messages.
+SQLite with WAL mode. Schema defined in `lib/db/schema.ts`.
+
+**Tables:** photos, photo_attributes, professionals, photos_professionals, reviews, conversations, messages
 
 ### Environment Variables
 
 Required in `.env.local`:
 - `GOOGLE_API_KEY` - Google Gemini API key (get one at https://aistudio.google.com/apikey)
+
+## Troubleshooting
+
+### "no such table: photos" error
+```bash
+npm run db:init
+```
+
+### Database corruption or stale data
+```bash
+npm run db:reset
+```
+
+### Port 3000 already in use
+```bash
+lsof -ti:3000 | xargs kill -9
+npm run dev
+```
+
+### Image 404 errors
+```bash
+npm run db:reset
+```
+
+### better-sqlite3 compilation errors
+On macOS:
+```bash
+xcode-select --install
+```
+
+### Build fails with "Houzz/IVY ecosystem code detected"
+1. Run `npm run check:no-houzz` to see specific violations
+2. Remove or replace any `@houzz/*` or `@ivy/*` package imports
+3. Replace `houzz.com` or `ivy.co` URLs with appropriate alternatives
+
+### Pre-push hook fails
+The pre-push hook runs type checking and architecture tests. If it fails:
+1. Run `npm run type-check` to see TypeScript errors
+2. Run `npm test` to see failing architecture tests
+3. Fix the violations before pushing
+
+## Development Workflow
+
+### Git Hooks (Automatic)
+
+- **Pre-commit**: Runs ESLint with auto-fix on staged files
+- **Pre-push**: Runs TypeScript type-check and architecture tests
+
+### Adding New Features
+
+1. Create feature folder under `app/` (e.g., `app/new-feature/`)
+2. Extract shared components to `app/components/`
+3. Add business logic to `lib/services/`
+4. Add API routes to `app/api/new-feature/`
+5. Update `lib/api/config.ts` with new routes
+6. Update `lib/navigation/routes.ts` for navigation
+
+### Commit Message Format
+
+```
+[feature] verb: description
+
+[photos] add: style filtering
+[chat] fix: message ordering
+[lib] refactor: extract validation
+```

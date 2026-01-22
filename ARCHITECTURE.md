@@ -185,7 +185,7 @@ graph TB
 /lib/api/
 ├── types.ts      # All request/response TypeScript types
 ├── config.ts     # Centralized route configuration
-├── builder.ts    # URL construction utilities
+├── builder.ts    # URL construction utilities (supports nested object params)
 ├── client.ts     # Typed API client methods
 └── index.ts      # Public exports
 ```
@@ -2030,47 +2030,138 @@ graph TB
 
 ```
 ai-for-all/
-├── app/
-│   ├── api/                    # Backend API routes
-│   │   ├── contact/
-│   │   │   ├── init/route.ts   # Initialize AI conversation
-│   │   │   ├── chat/route.ts   # Continue AI conversation
-│   │   │   └── latest/route.ts # Get latest conversation
-│   │   ├── feed/route.ts       # Get photos list
-│   │   └── photos/
-│   │       └── [id]/route.ts   # Get photo details
+├── app/                          # INTERFACE LAYER
+│   ├── api/                      # Backend API routes
+│   │   ├── contact/              # Contact/chat endpoints
+│   │   │   ├── init/route.ts     # Initialize AI conversation
+│   │   │   ├── chat/route.ts     # Continue AI conversation
+│   │   │   ├── latest/route.ts   # Get latest conversation
+│   │   │   ├── by-professional/route.ts  # Get by professional
+│   │   │   ├── conversation/[id]/route.ts  # Get conversation by ID
+│   │   │   └── mark-viewed/route.ts  # Mark as viewed
+│   │   ├── feed/route.ts         # Get paginated photo feed
+│   │   ├── photos/[id]/route.ts  # Get photo details
+│   │   └── professionals/[id]/route.ts  # Get professional details
 │   │
-│   ├── components/             # React components
-│   │   ├── PhotoBatch.tsx      # Server component - data fetcher
-│   │   ├── PhotoBatchClient.tsx # Client component - renderer
-│   │   ├── PhotoCard.tsx       # Individual photo card
-│   │   ├── PhotoGallery.tsx    # Context provider
-│   │   ├── PhotoModal.tsx      # Modal viewer
-│   │   ├── ContactPane.tsx     # AI chat interface
-│   │   └── Skeleton.tsx        # Loading skeleton
+│   ├── components/               # Shared React UI components
+│   │   ├── ContactPane.tsx       # AI chat interface
+│   │   ├── FilterBar.tsx         # Gallery filtering controls
+│   │   ├── FilteredGallery.tsx   # Filtered photo gallery
+│   │   ├── Footer.tsx            # Site footer
+│   │   ├── GalleryPageController.tsx  # Gallery page logic
+│   │   ├── Header.tsx            # Site header
+│   │   ├── Pagination.tsx        # Pagination controls
+│   │   ├── PhotoBatch.tsx        # Server component - data fetcher
+│   │   ├── PhotoBatchClient.tsx  # Client component - renderer
+│   │   ├── PhotoCard.tsx         # Individual photo card
+│   │   ├── PhotoGallery.tsx      # Gallery with context provider
+│   │   ├── PhotoModal.tsx        # Full photo detail modal
+│   │   ├── ProCTACard.tsx        # Professional CTA card
+│   │   └── Skeleton.tsx          # Loading skeleton
 │   │
-│   ├── layout.tsx              # Root layout
-│   ├── page.tsx                # Home page
-│   └── globals.css             # Global styles
+│   ├── professionals/            # Professionals feature
+│   │   ├── [id]/                 # Dynamic professional pages
+│   │   │   ├── page.tsx          # Professional profile page
+│   │   │   ├── ContactSection.tsx
+│   │   │   ├── BackButton.tsx
+│   │   │   ├── PhotoCard.tsx
+│   │   │   └── PhotoGalleryRegistrar.tsx
+│   │   ├── page.tsx              # Professionals listing
+│   │   ├── ProfessionalRow.tsx
+│   │   └── ProfessionalsList.tsx
+│   │
+│   ├── photos/                   # Photos feature
+│   │   └── [slug]/page.tsx       # Individual photo detail page
+│   │
+│   ├── styles/                   # Kitchen styles feature
+│   │   ├── [style]/              # Dynamic style pages
+│   │   │   ├── page.tsx          # Style detail page
+│   │   │   ├── StyleContent.tsx
+│   │   │   └── StyleGallery.tsx
+│   │   ├── page.tsx              # Styles index page
+│   │   └── StyleCard.tsx
+│   │
+│   ├── layout.tsx                # Root layout
+│   ├── page.tsx                  # Home page
+│   ├── page.module.css           # Home page styles
+│   └── globals.css               # Global styles
 │
-├── lib/                        # Business logic & utilities
-│   ├── db.ts                   # Database connection
-│   ├── data.ts                 # Data fetching orchestration
-│   ├── ai.ts                   # Google Gemini integration
-│   └── services/
-│       ├── photos.ts           # Photo database queries
-│       └── chat.ts             # Chat database queries
+├── lib/                          # LOGIC + DATA LAYERS
+│   ├── api/                      # Type-safe API client
+│   │   ├── builder.ts            # URL construction utilities
+│   │   ├── client.ts             # API client methods
+│   │   ├── config.ts             # Route configuration
+│   │   ├── types.ts              # Request/response types
+│   │   └── index.ts              # Public exports
+│   │
+│   ├── navigation/               # Type-safe routing
+│   │   ├── routes.ts             # Route definitions
+│   │   └── index.ts              # Public exports (nav helpers)
+│   │
+│   ├── services/                 # Business logic + queries
+│   │   ├── chat.ts               # Chat/conversation operations
+│   │   ├── photos.ts             # Photo operations
+│   │   └── professionals.ts      # Professional operations
+│   │
+│   ├── db/                       # Database layer
+│   │   ├── connection.ts         # Database connection
+│   │   ├── schema.ts             # Schema definitions
+│   │   ├── config.ts             # Database configuration
+│   │   ├── types.ts              # Database types
+│   │   └── index.ts              # Public exports
+│   │
+│   ├── data/                     # Static data
+│   │   └── style-guides.ts       # Kitchen style guide content
+│   │
+│   ├── proxy/                    # Proxy utilities
+│   │   ├── config.ts
+│   │   ├── handlers.ts
+│   │   ├── logger.ts
+│   │   └── index.ts
+│   │
+│   ├── utils/                    # Utility functions
+│   │   └── slug.ts               # URL slug utilities
+│   │
+│   ├── ai.ts                     # Google Gemini AI integration
+│   ├── cdn.ts                    # CDN/image utilities
+│   ├── data.ts                   # Data fetching orchestration
+│   └── db.ts                     # Legacy DB connection (deprecated)
 │
-├── scripts/
-│   └── init-db.ts              # Database seeding script
+├── scripts/                      # Build & setup scripts
+│   ├── check-no-houzz-code.ts    # Houzz/IVY code detection
+│   ├── check-standards.ts        # Standards compliance check
+│   ├── init-db.ts                # Database initialization
+│   ├── install-hooks.sh          # Git hooks installer
+│   ├── quick-init.mjs            # Quick initialization
+│   └── git-hooks/                # Custom git hooks
+│       └── pre-push              # Pre-push verification
 │
-├── public/                     # Static assets
-├── .env.local                  # Environment variables (not committed)
-├── local.db                    # SQLite database (not committed)
+├── tests/                        # Test files
+│   └── architecture.test.ts      # Architecture compliance tests
+│
+├── docs/                         # Documentation
+│   ├── CONTACT_PROFESSIONALS.md  # Contact feature docs
+│   └── REACT_BEST_PRACTICES_REVIEW.md  # Best practices review
+│
+├── .husky/                       # Husky git hooks
+│   ├── pre-commit                # Lint-staged on commit
+│   └── pre-push                  # Type-check + tests on push
+│
+├── .github/                      # GitHub configuration
+│   ├── pull_request_template.md
+│   └── workflows/standards.yml   # CI workflow
+│
+├── public/                       # Static assets
+├── .env.local                    # Environment variables (not committed)
+├── local.db                      # SQLite database (not committed)
+├── jest.config.js                # Jest configuration
+├── eslint.config.mjs             # ESLint configuration
 ├── package.json
 ├── tsconfig.json
 ├── next.config.ts
-└── README.md
+├── CLAUDE.md                     # AI assistant guidance
+├── ARCHITECTURE.md               # This file
+└── README.md                     # Project readme
 ```
 
 ---
