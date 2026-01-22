@@ -112,6 +112,7 @@ Should I proceed?"
 - ✅ Use `nav` helpers for routing
 - ✅ Extract shared code proactively
 - ✅ **Generate tests for ALL code written** (see below)
+- ✅ **Generate documentation for ALL features built** (see below)
 - ✅ **Keep documentation and tests in sync** (see below)
 
 ---
@@ -162,6 +163,71 @@ describe('Thing', () => {
 □ Tests cover happy path AND error cases?
 □ External dependencies mocked?
 □ All tests pass? (npm test)
+```
+
+---
+
+## Documentation Rule (CRITICAL)
+
+**Every feature MUST include comprehensive documentation.**
+
+### Required: Feature README.md
+
+Every feature folder must have a README.md with these sections:
+
+| Section | Description |
+|---------|-------------|
+| **Responsibilities** | What this feature handles / doesn't handle |
+| **Key Components** | Table of components with file and purpose |
+| **Routes** | Table of routes (if applicable) |
+| **Data Flow** | How data moves through the feature |
+| **Usage Examples** | Code examples showing usage |
+
+### README Template
+
+```markdown
+# Feature Name
+
+Brief description.
+
+## Responsibilities
+
+**Handles:** List responsibilities
+**Does NOT handle:** List delegations
+
+## Key Components
+
+| Component | File | Purpose |
+|-----------|------|---------|
+| Name | `file.tsx` | What it does |
+
+## Routes
+
+| Route | File | Description |
+|-------|------|-------------|
+| `/path` | `page.tsx` | What it shows |
+
+## Data Flow
+
+Source → Processing → Output
+
+## Usage Examples
+
+\`\`\`typescript
+// Example code
+\`\`\`
+```
+
+### Documentation Checklist
+
+```
+□ Feature README.md created?
+□ Responsibilities section defines scope?
+□ Key Components table complete?
+□ Routes documented?
+□ Data flow included?
+□ Usage examples provided?
+□ Project README.md updated?
 ```
 
 ---
@@ -457,6 +523,12 @@ TESTS (REQUIRED):
 □ Happy path tested?
 □ Error cases tested?
 □ Dependencies mocked?
+
+DOCUMENTATION (REQUIRED):
+□ Feature README.md created/updated?
+□ Responsibilities section complete?
+□ Key Components table complete?
+□ Usage examples included?
 ```
 
 **Import rules:**

@@ -82,6 +82,7 @@ CODE QUALITY (WARNING - should fix):
 - ✅ Use existing patterns from the codebase
 - ✅ Generate types for all data structures
 - ✅ **Generate tests for ALL code written** (see Test Generation Rule below)
+- ✅ **Generate documentation for ALL features built** (see Documentation Rule below)
 - ✅ **Keep documentation and tests in sync with code changes** (see below)
 
 ### Test Generation Rule (CRITICAL)
@@ -150,6 +151,88 @@ This is NON-NEGOTIABLE. When generating code, Claude must:
 □ Do tests cover happy path and error cases?
 □ Are external dependencies properly mocked?
 □ Do all tests pass? (npm test)
+```
+
+### Documentation Rule (CRITICAL)
+
+**Every feature MUST include comprehensive documentation.**
+
+This is NON-NEGOTIABLE. When building a feature, Claude must:
+
+1. **Create a README.md in the feature folder:**
+   - Feature `app/photos/` → `app/photos/README.md`
+   - Feature `app/professionals/` → `app/professionals/README.md`
+   - API route group `app/api/contact/` → `app/api/contact/README.md`
+
+2. **Required README sections:**
+
+   ```markdown
+   # Feature Name
+
+   Brief description of what this feature does.
+
+   ## Responsibilities
+
+   **What this feature handles:**
+   - Responsibility 1
+   - Responsibility 2
+
+   **What this feature does NOT handle:**
+   - Delegated responsibility 1
+   - Delegated responsibility 2
+
+   ## Key Components
+
+   | Component | File | Purpose |
+   |-----------|------|---------|
+   | ComponentName | `ComponentName.tsx` | What it does |
+
+   ## Routes (if applicable)
+
+   | Route | File | Description |
+   |-------|------|-------------|
+   | `/path` | `page.tsx` | What the page shows |
+
+   ## Data Flow
+
+   ```
+   Source → Processing → Output
+   ```
+
+   ## Usage Examples
+
+   ```typescript
+   // Example code showing how to use this feature
+   ```
+   ```
+
+3. **For API routes, also document:**
+   - Request/response formats
+   - Query parameters
+   - Error responses
+   - Authentication requirements
+
+4. **For components, also document:**
+   - Props interface
+   - Usage examples
+   - State management
+   - Event handlers
+
+5. **Update project-level docs:**
+   - Add new features to `README.md` project structure
+   - Update `ARCHITECTURE.md` if architecture changes
+   - Add types to `lib/api/types.ts` for API routes
+
+**Documentation checklist:**
+```
+□ Feature README.md created with all required sections?
+□ Responsibilities section clearly defines scope?
+□ Key Components table lists all files?
+□ Routes documented (if applicable)?
+□ Data flow diagram included?
+□ Usage examples provided?
+□ Project README.md updated?
+□ ARCHITECTURE.md updated (if needed)?
 ```
 
 ### Documentation & Test Sync Rule (CRITICAL)
@@ -515,6 +598,13 @@ TEST CHECK (REQUIRED):
 □ Error cases tested?
 □ Dependencies mocked?
 □ All tests pass?
+
+DOCUMENTATION CHECK (REQUIRED):
+□ Feature README.md created/updated?
+□ Responsibilities section complete?
+□ Key Components table complete?
+□ Usage examples included?
+□ Project README.md updated?
 ```
 
 **Import Rules Visual:**
