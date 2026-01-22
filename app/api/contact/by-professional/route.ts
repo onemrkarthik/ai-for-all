@@ -1,23 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/lib/db';
-import type { ConversationWithNewMessageCountRow, MessageRow } from '@/lib/db/types';
-
-const getLatestConversationByProfessionalStmt = db.prepare(`
-    SELECT c.*,
-           (SELECT COUNT(*)
-            FROM messages
-            WHERE conversation_id = c.id
-            AND role = 'assistant'
-            AND created_at > COALESCE(c.last_viewed_at, '1900-01-01')) as new_message_count
-    FROM conversations c
-    WHERE c.professional_id = ?
-    ORDER BY c.created_at DESC
-    LIMIT 1
-`);
-
-const getMessagesStmt = db.prepare(`
-    SELECT * FROM messages WHERE conversation_id = ? ORDER BY created_at ASC
-`);
+import { getLatestConversationByProfessionalId } from '@/lib/services/chat';
 
 export async function GET(request: NextRequest) {
     try {
@@ -31,13 +13,11 @@ export async function GET(request: NextRequest) {
             );
         }
 
-        const conversation = getLatestConversationByProfessionalStmt.get(parseInt(professionalId)) as ConversationWithNewMessageCountRow | undefined;
+        const conversation = getLatestConversationByProfessionalId(parseInt(professionalId));
 
         if (!conversation) {
             return NextResponse.json({ conversation: null });
         }
-
-        const messages = getMessagesStmt.all(conversation.id) as MessageRow[];
 
         return NextResponse.json({
             conversation: {
@@ -45,8 +25,8 @@ export async function GET(request: NextRequest) {
                 professional_id: conversation.professional_id,
                 last_summary: conversation.last_summary,
                 last_viewed_at: conversation.last_viewed_at,
-                has_new_messages: conversation.new_message_count > 0,
-                messages: messages.map(m => ({
+                has_new_messages: conversation.has_new_messages,
+                messages: conversation.messages.map(m => ({
                     id: m.id,
                     role: m.role,
                     content: m.content,
