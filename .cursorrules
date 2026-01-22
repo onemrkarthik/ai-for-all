@@ -1,0 +1,319 @@
+# Cursor Rules — ai-for-all Kitchen Design Gallery
+
+You are an AI coding assistant working on a Next.js 16 kitchen design gallery with AI-powered consultation.
+
+---
+
+## AI Behavior Directives (CRITICAL)
+
+**These rules are NON-NEGOTIABLE. Follow them for EVERY code generation task.**
+
+### Before Writing ANY Code
+
+```
+□ Which feature does this belong to?
+□ Will this import from another feature? → STOP, refactor first
+□ Which layer? (interface/logic/data) → Never mix
+□ Does lib/ or app/components/ already have this?
+```
+
+### REFUSE to Generate Code That:
+
+| Violation | Example |
+|-----------|---------|
+| Cross-feature import | `professionals/` importing from `photos/` |
+| Cross-API import | `api/professionals/` importing from `api/photos/` |
+| Layer violation | Component importing from `lib/db` |
+| Generic file names | `utils.ts`, `helpers.ts`, `misc.ts` |
+| Hardcoded values | URLs, IPs, secrets in code |
+| Type violations | `any`, `@ts-ignore`, `@ts-nocheck` |
+| Raw fetch | `fetch('/api/...')` instead of `api` client |
+| Hardcoded paths | `href="/photos"` instead of `nav` helpers |
+
+### When User Requests Violating Code
+
+1. **STOP** — Do not generate the violating code
+2. **EXPLAIN** — Tell user which rule it violates
+3. **PROPOSE** — Offer a compliant alternative
+4. **CONFIRM** — Get user approval before proceeding
+
+Example response:
+```
+"I can't create this because it would import from photos/ into professionals/, 
+which violates feature isolation.
+
+Instead, I'll:
+1. Extract shared code to lib/services/photoUtils.ts
+2. Have both features import from there
+
+Should I proceed?"
+```
+
+### ALWAYS Do:
+
+- ✅ Propose file location before writing
+- ✅ Use existing patterns from codebase
+- ✅ Generate TypeScript types for all data
+- ✅ Use `api` client for internal API calls
+- ✅ Use `nav` helpers for routing
+- ✅ Extract shared code proactively
+
+---
+
+## Tech Stack
+
+- Next.js 16 with App Router
+- React 19
+- TypeScript
+- SQLite (better-sqlite3)
+- Google Gemini AI
+
+---
+
+## Team Standards (Non-Negotiable)
+
+### 1. Single Responsibility
+Every file, function, component does ONE thing. If you say "and" describing it, split it up.
+
+### 2. Three-Layer Architecture
+
+```
+INTERFACE  → app/, app/api/, app/components/
+LOGIC      → lib/api/, lib/navigation/, lib/services/
+DATA       → lib/db/, lib/services/ (query functions)
+```
+
+- UI components never touch database directly
+- Data layer never contains business rules
+- Use service layer between UI and database
+
+### 3. Feature Isolation (CRITICAL)
+
+**Features CANNOT import from other features. Ever.**
+
+```
+app/
+├── professionals/     ❌ Cannot import from photos/, styles/, etc.
+├── photos/            ❌ Cannot import from professionals/, styles/, etc.
+├── styles/            ❌ Cannot import from professionals/, photos/, etc.
+├── api/
+│   ├── professionals/ ❌ Cannot import from api/photos/, api/contact/, etc.
+│   ├── photos/        ❌ Cannot import from api/professionals/, etc.
+│   └── contact/       ❌ Cannot import from api/professionals/, etc.
+├── components/        ✅ SHARED - any feature can use these
+└── lib/               ✅ SHARED - any feature can use these
+```
+
+**When two features need the same code:**
+1. UI components → Extract to `app/components/`
+2. Business logic → Extract to `lib/services/`
+3. Utilities → Extract to `lib/`
+
+**Never create direct feature-to-feature dependencies.**
+
+### 4. Human Readable
+Non-technical team members must understand file names and structure.
+
+### 5. Shareable by Default
+No hardcoded values. No hidden dependencies. Everything explicit.
+
+---
+
+## Project Structure
+
+```
+app/                          # INTERFACE
+├── api/                      # API routes
+│   ├── contact/
+│   ├── feed/
+│   ├── photos/
+│   └── professionals/
+├── components/               # React components
+├── professionals/[id]/       # Profile pages
+├── styles/[style]/           # Style landing pages
+└── photos/[slug]/            # Photo detail pages
+
+lib/                          # LOGIC + DATA
+├── api/                      # Type-safe API client
+├── navigation/               # Type-safe routing
+├── services/                 # Business logic
+│   ├── photos.ts
+│   └── chat.ts
+├── db/                       # Database
+│   ├── index.ts              # Connection
+│   └── schema.ts             # Schema
+└── ai.ts                     # Gemini integration
+```
+
+---
+
+## Naming Conventions
+
+Functions: verb + noun
+- ✅ `createPhoto`, `validateContact`, `fetchProfessional`
+- ❌ `handleClick`, `processData`, `doStuff`
+
+Files: descriptive content
+- ✅ `photoGallery.tsx`, `chatService.ts`
+- ❌ `utils.ts`, `helpers.ts`
+
+---
+
+## Type-Safe Patterns (Always Use These)
+
+### API Calls
+```typescript
+// ✅ CORRECT - use typed API client
+import { api } from '@/lib/api';
+const photo = await api.photos.get(123);
+const feed = await api.feed.list({ offset: 0, limit: 20 });
+
+// ❌ WRONG - raw fetch
+fetch('/api/photos/123')
+```
+
+### Navigation
+```typescript
+// ✅ CORRECT - use typed navigation
+import { nav } from '@/lib/navigation';
+<Link href={nav.professionals.detail(5)} />
+<Link href={nav.home.index({ photo: 123 })} />
+
+// ❌ WRONG - hardcoded paths
+<Link href="/professionals/5" />
+<Link href="/?photo=123" />
+```
+
+---
+
+## Component Rules
+
+### Server Components (default)
+- No `'use client'` directive
+- Data fetching happens here
+- No useState, useEffect, event handlers
+
+### Client Components
+- Must have `'use client'` at top
+- For interactivity (clicks, forms, state)
+- Most components in `app/components/` are client
+
+---
+
+## Code Generation Checklist
+
+Before generating:
+- [ ] What ONE thing does this code do?
+- [ ] Which layer? (interface / logic / data)
+- [ ] Which folder?
+- [ ] Does `lib/` already have this?
+
+While generating:
+- [ ] One function = one job
+- [ ] Use `api` client, not raw fetch
+- [ ] Use `nav` helpers, not hardcoded paths
+- [ ] Types for all data structures
+- [ ] No mixing layers
+
+After generating:
+- [ ] File has single purpose
+- [ ] Names are descriptive
+- [ ] No hardcoded values
+- [ ] Would work if copied elsewhere
+
+---
+
+## Anti-Patterns — Never Do
+
+| Bad | Fix |
+|-----|-----|
+| God file | Split into layers |
+| `utils.ts` | Specific files: `dateFormat.ts` |
+| Raw `fetch()` | Use `api` client |
+| Hardcoded paths | Use `nav` helpers |
+| UI with DB calls | Use service layer |
+| `any` type | Define proper types |
+| **Feature imports feature** | Extract to `app/components/` or `lib/` |
+| **API imports API** | Extract to `lib/services/` |
+
+---
+
+## Database
+
+SQLite with WAL mode. Never query directly from components.
+
+Tables: `photos`, `photo_attributes`, `professionals`, `photos_professionals`, `reviews`, `conversations`, `messages`
+
+Schema: `lib/db/schema.ts`
+
+---
+
+## Environment
+
+Required in `.env.local`:
+```
+GOOGLE_API_KEY=your_key_here
+```
+
+Get key at: https://aistudio.google.com/apikey
+
+---
+
+## Commit Messages
+
+```
+[feature] verb: description
+
+[photos] add: style filtering
+[chat] fix: message ordering
+[lib] refactor: extract validation
+```
+
+---
+
+## When Uncertain
+
+1. Ask—don't assume
+2. Check `lib/` for existing utilities
+3. Choose simpler solutions
+4. Suggest refactors for violations
+
+---
+
+## AI Quick Reference
+
+**Pre-generation checklist:**
+```
+□ Feature: _____________ Layer: [ ]interface [ ]logic [ ]data
+□ Cross-feature import? → STOP
+□ Cross-API import? → STOP  
+□ UI importing db? → STOP
+□ File name generic? → Rename
+```
+
+**Import rules:**
+```
+✅ ALLOWED                 ❌ BLOCKED
+feature → app/components/  feature → feature
+feature → lib/*            api/X → api/Y
+api → lib/services/        UI → lib/db
+```
+
+**Shared code locations:**
+```
+UI components  → app/components/
+Business logic → lib/services/
+API helpers    → lib/api/
+Types          → lib/types/ or [feature]/types.ts
+```
+
+**Response template for violations:**
+```
+"I can't generate this because [RULE VIOLATED].
+
+Instead, I'll:
+1. [COMPLIANT STEP 1]
+2. [COMPLIANT STEP 2]
+
+Should I proceed?"
+```
