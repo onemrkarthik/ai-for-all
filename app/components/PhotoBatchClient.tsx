@@ -115,6 +115,8 @@ export function PhotoBatchClient({ data, offset, limit: _limit, initialData, del
                         index={localIndex}
                         // Prioritize loading for the first 4 images of the first batch (LCP optimization)
                         priority={initialData && localIndex < 4}
+                        // Skip animation for first image to improve LCP (render immediately)
+                        skipAnimation={initialData && localIndex === 0}
                         // Direct onClick - bypasses event delegation for reliability
                         onClick={(photo) => handlePhotoClick(photo, localIndex)}
                     />

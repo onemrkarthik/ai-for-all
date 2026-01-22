@@ -28,6 +28,7 @@ import { FilteredGallery } from '@/app/components/FilteredGallery';
 import { Pagination } from '@/app/components/Pagination';
 import { GalleryPageController } from '@/app/components/GalleryPageController';
 import { parseTopicSlug, getTopicDisplayName } from '@/lib/utils/slug';
+import { LCPImagePreload } from '@/app/components/LCPImagePreload';
 
 const ITEMS_PER_PAGE = 100;
 const BATCH_SIZE = 20; // Photos per streaming batch
@@ -126,8 +127,14 @@ export default async function TopicPhotosPage({
     "image": firstBatchData.map(item => item.image)
   };
 
+  // Get LCP image URL (first image in first batch) for preloading
+  const lcpImageUrl = firstBatchData.length > 0 ? firstBatchData[0].image : null;
+
   return (
     <PhotoGalleryProvider>
+      {/* Preload LCP image for faster rendering */}
+      {lcpImageUrl && <LCPImagePreload src={lcpImageUrl} />}
+
       {/* Controller to handle loading more photos in modal */}
       <GalleryPageController
         currentPage={currentPage}

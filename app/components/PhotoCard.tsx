@@ -7,6 +7,8 @@ interface PhotoCardProps {
     item: Item;
     index: number;
     priority?: boolean;
+    /** Skip animation for LCP optimization (first image should render immediately) */
+    skipAnimation?: boolean;
     onClick?: (item: Item) => void;
 }
 
@@ -20,7 +22,7 @@ function getColorForSource(source: string): string {
     return colors[Math.abs(hash) % colors.length];
 }
 
-export function PhotoCard({ item, index, priority = false, onClick }: PhotoCardProps) {
+export function PhotoCard({ item, index, priority = false, skipAnimation = false, onClick }: PhotoCardProps) {
     const handleClick = () => {
         if (onClick) {
             onClick(item);
@@ -28,6 +30,15 @@ export function PhotoCard({ item, index, priority = false, onClick }: PhotoCardP
     };
 
     const dotColor = getColorForSource(item.source);
+
+    // LCP optimization: First image should render immediately without animation delay
+    const animationStyle = skipAnimation
+        ? {}
+        : {
+            animation: 'fadeIn 0.5s ease-out',
+            animationFillMode: 'both' as const,
+            animationDelay: `${index * 0.03}s`,
+        };
 
     return (
         <div
@@ -37,11 +48,9 @@ export function PhotoCard({ item, index, priority = false, onClick }: PhotoCardP
             style={{
                 borderRadius: '3px',
                 overflow: 'hidden',
-                animation: 'fadeIn 0.5s ease-out',
-                animationFillMode: 'both',
-                animationDelay: `${index * 0.03}s`,
                 cursor: 'pointer',
                 background: 'white',
+                ...animationStyle,
             }}
         >
             {/* Image container */}
@@ -59,8 +68,15 @@ export function PhotoCard({ item, index, priority = false, onClick }: PhotoCardP
                     alt={item.title}
                     fill
                     priority={priority}
-                    sizes="(max-width: 600px) 50vw, (max-width: 950px) 100vw, (max-width: 1400px) 50vw, 33vw"
+                    // Mobile-first sizes: on mobile (<=600px) images are ~50vw
+                    // This helps browser choose optimal image size for LCP
+                    sizes="(max-width: 600px) 50vw, (max-width: 900px) 33vw, (max-width: 1200px) 25vw, 20vw"
                     style={{ objectFit: 'cover' }}
+                    // Blur placeholder for perceived performance
+                    placeholder="blur"
+                    blurDataURL="data:image/jpeg;base64,/9j/4AAQSkZJRgABAQAAAQABAAD/2wBDAAYEBQYFBAYGBQYHBwYIChAKCgkJChQODwwQFxQYGBcUFhYaHSUfGhsjHBYWICwgIyYnKSopGR8tMC0oMCUoKSj/2wBDAQcHBwoIChMKChMoGhYaKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCgoKCj/wAARCAAIAAoDASIAAhEBAxEB/8QAFgABAQEAAAAAAAAAAAAAAAAAAAUH/8QAIhAAAgEDBAMBAAAAAAAAAAAAAQIDAAQRBRIhMQYTQVH/xAAVAQEBAAAAAAAAAAAAAAAAAAADBP/EABkRAAIDAQAAAAAAAAAAAAAAAAECAAMRIf/aAAwDAQACEQMRAD8AzPT9YvbeBIYLiWOJBtVFYgAdhRRWlViKvJk5LGy7n//Z"
+                    // Reduce loading attribute impact by using eager for priority images
+                    loading={priority ? 'eager' : 'lazy'}
                 />
             </div>
 
