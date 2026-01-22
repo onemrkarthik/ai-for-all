@@ -32,11 +32,16 @@ This document defines the engineering standards for our full-stack codebase. It 
 | Layer separation | UI code can't directly access the database | ERROR |
 | Feature isolation | Features can't import from other features | ERROR |
 | API isolation | API routes can't import from other API routes | ERROR |
+| Client directive | Components using hooks need `'use client'` | ERROR |
 | Type safety | Don't use `any` type or `@ts-ignore` | WARNING |
+| Async/await | Use `async/await` not `.then()` chains | WARNING |
+| No console.log | Remove `console.log` from production code | WARNING |
+| No require() | Use ES imports, not CommonJS `require()` | WARNING |
 | Use API client | Use `api.photos.get()` not `fetch('/api/...')` | WARNING |
 | Use nav helpers | Use `nav.home.index()` not `href="/"` | WARNING |
 | No hardcoded values | URLs and secrets go in environment variables | WARNING |
 | Feature READMEs | Each feature folder needs a README.md | WARNING |
+| README template | Feature READMEs need required sections | WARNING |
 
 **ERROR** = Code cannot be pushed until fixed
 **WARNING** = Code can be pushed, but should be fixed
@@ -620,12 +625,17 @@ User Action → Component → API Client → API Route → Service → Database
 | Layer violation | Move DB code to `lib/services/`, use API client in UI |
 | Cross-feature import | Move shared code to `app/components/` or `lib/` |
 | Cross-API import | Move shared logic to `lib/services/` |
+| Missing `'use client'` | Add `'use client'` directive at top of file |
 | `any` type | Define an interface in `lib/types/` or locally |
 | `@ts-ignore` | Fix the underlying type error |
+| `.then()` chain | Convert to `async/await` syntax |
+| `console.log` | Remove or use `console.error` for errors |
+| `require()` | Convert to ES import: `import x from 'y'` |
 | Raw fetch | Use `api` client from `@/lib/api` |
 | Hardcoded path | Use `nav` helper from `@/lib/navigation` |
 | Hardcoded URL | Move to environment variable |
 | Missing README | Create README.md with required sections |
+| Missing README section | Add Responsibilities, Routes, Key Components sections |
 
 ### Understanding Check Output
 
@@ -760,5 +770,6 @@ When in doubt:
 ---
 
 **Version History:**
+- 2.1.0 (2026-01-22) - Added 5 new automated checks: async/await, console.log, require(), client directive, README template
 - 2.0.0 (2026-01-22) - Added Clean Architecture principles, component patterns, database standards
 - 1.0.0 (2026-01-22) - Initial release

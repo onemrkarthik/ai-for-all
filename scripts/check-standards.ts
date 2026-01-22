@@ -2,9 +2,11 @@
 
 /**
  * Standards Enforcement Script
- * 
- * Checks codebase for violations of team standards.
+ *
+ * Checks codebase for violations of team standards defined in docs/STANDARDS.md.
  * Run with: npm run check:standards
+ *
+ * Version: 2.0.0 (aligned with STANDARDS.md v2.0)
  */
 
 import * as fs from 'fs';
@@ -518,26 +520,26 @@ function checkApiRouteIsolation(files: string[]): Violation[] {
 
 function checkHardcodedPaths(files: string[]): Violation[] {
   const violations: Violation[] = [];
-  
+
   for (const file of files) {
     // Only check app/ directory
     if (!file.startsWith('app/')) {
       continue;
     }
-    
+
     const content = readFileContent(file);
     const lines = content.split('\n');
-    
+
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
-      
+
       // Check for hardcoded href paths (but allow external links and anchors)
       if (/href\s*=\s*['"`]\/(?!api)[a-z]/.test(line)) {
         // Skip if it's using nav helper
         if (line.includes('nav.')) {
           continue;
         }
-        
+
         violations.push({
           file,
           line: i + 1,
@@ -548,7 +550,298 @@ function checkHardcodedPaths(files: string[]): Violation[] {
       }
     }
   }
-  
+
+  return violations;
+}
+
+/**
+ * Check for .then() promise chains - should use async/await instead
+ * Per STANDARDS.md: "Always use async/await, never raw .then() chains"
+ */
+function checkAsyncAwait(files: string[]): Violation[] {
+  const violations: Violation[] = [];
+
+  for (const file of files) {
+    // Skip test files - they may use .then() for specific testing patterns
+    if (file.includes('.test.') || file.includes('.spec.')) {
+      continue;
+    }
+
+    const content = readFileContent(file);
+    const lines = content.split('\n');
+
+    let inBlockComment = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+
+      // Track block comments
+      if (trimmedLine.startsWith('/*') || trimmedLine.startsWith('/**')) {
+        inBlockComment = true;
+      }
+      if (trimmedLine.includes('*/')) {
+        inBlockComment = false;
+        continue;
+      }
+
+      // Skip comments
+      if (inBlockComment || trimmedLine.startsWith('//') || trimmedLine.startsWith('*')) {
+        continue;
+      }
+
+      // Check for .then( pattern (promise chains)
+      // But allow .then in variable/property names like "authentication"
+      if (/\)\s*\.then\s*\(/.test(line) || /\.then\s*\(\s*(?:async\s*)?\(?[a-zA-Z]/.test(line)) {
+        violations.push({
+          file,
+          line: i + 1,
+          rule: 'use-async-await',
+          message: 'Use async/await instead of .then() promise chains for better readability',
+          severity: 'warning',
+        });
+      }
+    }
+  }
+
+  return violations;
+}
+
+/**
+ * Check for console.log in production code
+ * Per STANDARDS.md: Console statements should be removed from production code
+ */
+function checkConsoleLogs(files: string[]): Violation[] {
+  const violations: Violation[] = [];
+
+  for (const file of files) {
+    // Skip test files and logger utilities
+    if (file.includes('.test.') || file.includes('.spec.') || file.includes('logger')) {
+      continue;
+    }
+
+    const content = readFileContent(file);
+    const lines = content.split('\n');
+
+    let inBlockComment = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+
+      // Track block comments
+      if (trimmedLine.startsWith('/*') || trimmedLine.startsWith('/**')) {
+        inBlockComment = true;
+      }
+      if (trimmedLine.includes('*/')) {
+        inBlockComment = false;
+        continue;
+      }
+
+      // Skip comments
+      if (inBlockComment || trimmedLine.startsWith('//') || trimmedLine.startsWith('*')) {
+        continue;
+      }
+
+      // Check for console.log (but allow console.error, console.warn for error handling)
+      if (/console\.log\s*\(/.test(line)) {
+        violations.push({
+          file,
+          line: i + 1,
+          rule: 'no-console-log',
+          message: 'Remove console.log from production code. Use a logger utility or console.error for errors.',
+          severity: 'warning',
+        });
+      }
+    }
+  }
+
+  return violations;
+}
+
+/**
+ * Check for CommonJS require() imports
+ * Per STANDARDS.md: Use ES modules (import) instead of CommonJS (require)
+ */
+function checkRequireImports(files: string[]): Violation[] {
+  const violations: Violation[] = [];
+
+  for (const file of files) {
+    // Skip config files that might need require
+    if (file.includes('config') || file.endsWith('.js') || file.endsWith('.mjs')) {
+      continue;
+    }
+
+    const content = readFileContent(file);
+    const lines = content.split('\n');
+
+    let inBlockComment = false;
+
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+      const trimmedLine = line.trim();
+
+      // Track block comments
+      if (trimmedLine.startsWith('/*') || trimmedLine.startsWith('/**')) {
+        inBlockComment = true;
+      }
+      if (trimmedLine.includes('*/')) {
+        inBlockComment = false;
+        continue;
+      }
+
+      // Skip comments
+      if (inBlockComment || trimmedLine.startsWith('//') || trimmedLine.startsWith('*')) {
+        continue;
+      }
+
+      // Check for require() calls
+      if (/\brequire\s*\(\s*['"]/.test(line)) {
+        violations.push({
+          file,
+          line: i + 1,
+          rule: 'no-require-imports',
+          message: 'Use ES module imports (import x from "y") instead of CommonJS require()',
+          severity: 'warning',
+        });
+      }
+    }
+  }
+
+  return violations;
+}
+
+/**
+ * Check that client components have 'use client' directive when using hooks
+ * Per STANDARDS.md: Client Components require 'use client' directive for interactivity
+ */
+function checkClientDirective(files: string[]): Violation[] {
+  const violations: Violation[] = [];
+
+  // Hooks that require 'use client'
+  const clientHooks = [
+    'useState',
+    'useEffect',
+    'useRef',
+    'useCallback',
+    'useMemo',
+    'useReducer',
+    'useContext',
+    'useLayoutEffect',
+    'useImperativeHandle',
+    'useDebugValue',
+    'useDeferredValue',
+    'useTransition',
+    'useId',
+    'useSyncExternalStore',
+    'useInsertionEffect',
+  ];
+
+  for (const file of files) {
+    // Only check app/ directory (not lib/)
+    if (!file.startsWith('app/')) {
+      continue;
+    }
+    // Skip API routes
+    if (file.includes('app/api/')) {
+      continue;
+    }
+    // Only check TSX files (components)
+    if (!file.endsWith('.tsx')) {
+      continue;
+    }
+
+    const content = readFileContent(file);
+    const lines = content.split('\n');
+
+    // Check if file has 'use client' directive
+    const hasUseClient = content.includes("'use client'") || content.includes('"use client"');
+
+    if (hasUseClient) {
+      continue; // Already a client component
+    }
+
+    // Check if file uses any client hooks
+    for (let i = 0; i < lines.length; i++) {
+      const line = lines[i];
+
+      for (const hook of clientHooks) {
+        // Match hook usage like useState( or useState<
+        const hookPattern = new RegExp(`\\b${hook}\\s*[(<]`);
+        if (hookPattern.test(line)) {
+          violations.push({
+            file,
+            line: i + 1,
+            rule: 'missing-use-client',
+            message: `Using ${hook} requires 'use client' directive at top of file`,
+            severity: 'error',
+          });
+          break; // Only report once per file
+        }
+      }
+
+      // If we found a violation, stop checking this file
+      if (violations.some(v => v.file === file)) {
+        break;
+      }
+    }
+  }
+
+  return violations;
+}
+
+/**
+ * Check README.md files have required sections per STANDARDS.md template
+ */
+function checkReadmeTemplate(files: string[]): Violation[] {
+  const violations: Violation[] = [];
+
+  // Required sections in feature READMEs
+  const requiredSections = [
+    { pattern: /^##?\s+Responsibilities/mi, name: 'Responsibilities' },
+    { pattern: /^##?\s+Routes/mi, name: 'Routes' },
+    { pattern: /^##?\s+Key Components/mi, name: 'Key Components' },
+  ];
+
+  if (!fs.existsSync('app')) {
+    return violations;
+  }
+
+  const appContents = fs.readdirSync('app');
+
+  for (const item of appContents) {
+    const fullPath = path.join('app', item);
+
+    // Skip if not a directory or excluded
+    if (!fs.statSync(fullPath).isDirectory()) {
+      continue;
+    }
+    if (CONFIG.excludedFromFeatureCheck.includes(item)) {
+      continue;
+    }
+    if (item.startsWith('(') || item.startsWith('[')) {
+      continue;
+    }
+
+    const readmePath = path.join(fullPath, 'README.md');
+    if (!fs.existsSync(readmePath)) {
+      continue; // Missing README is caught by checkFeatureReadmes
+    }
+
+    const content = readFileContent(readmePath);
+
+    for (const section of requiredSections) {
+      if (!section.pattern.test(content)) {
+        violations.push({
+          file: readmePath,
+          rule: 'readme-missing-section',
+          message: `Feature README missing required section: "${section.name}". See docs/STANDARDS.md for template.`,
+          severity: 'warning',
+        });
+      }
+    }
+  }
+
   return violations;
 }
 
@@ -570,16 +863,29 @@ function main(): void {
   console.log(`   Scanning ${files.length} files...\n`);
   
   // Run all checks
+  // Grouped by category per STANDARDS.md v2.0
   const checks = [
+    // Architecture checks (ERROR severity)
     { name: 'Generic file names', fn: () => checkForbiddenFileNames(files) },
     { name: 'Layer violations', fn: () => checkLayerViolations(files) },
     { name: 'Cross-feature imports', fn: () => checkCrossFeatureImports(files) },
     { name: 'API route isolation', fn: () => checkApiRouteIsolation(files) },
-    { name: 'Feature READMEs', fn: () => checkFeatureReadmes() },
-    { name: 'Hardcoded values', fn: () => checkHardcodedValues(files) },
+    { name: 'Client directive', fn: () => checkClientDirective(files) },
+
+    // Code quality checks (WARNING severity)
     { name: 'Type safety', fn: () => checkTypeSafety(files) },
+    { name: 'Async/await usage', fn: () => checkAsyncAwait(files) },
+    { name: 'Console.log usage', fn: () => checkConsoleLogs(files) },
+    { name: 'Require imports', fn: () => checkRequireImports(files) },
+
+    // Pattern checks (WARNING severity)
     { name: 'Raw fetch usage', fn: () => checkRawFetchUsage(files) },
     { name: 'Hardcoded paths', fn: () => checkHardcodedPaths(files) },
+    { name: 'Hardcoded values', fn: () => checkHardcodedValues(files) },
+
+    // Documentation checks (WARNING severity)
+    { name: 'Feature READMEs', fn: () => checkFeatureReadmes() },
+    { name: 'README template', fn: () => checkReadmeTemplate(files) },
   ];
   
   for (const check of checks) {
