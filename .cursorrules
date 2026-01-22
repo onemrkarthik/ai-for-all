@@ -25,10 +25,38 @@ You are an AI coding assistant working on a Next.js 16 kitchen design gallery wi
 | Cross-API import | `api/professionals/` importing from `api/photos/` |
 | Layer violation | Component importing from `lib/db` |
 | Generic file names | `utils.ts`, `helpers.ts`, `misc.ts` |
-| Hardcoded values | URLs, IPs, secrets in code |
+| Hardcoded values | URLs, IPs, secrets (except: schema.org, unsplash, xmlns, w3.org) |
 | Type violations | `any`, `@ts-ignore`, `@ts-nocheck` |
 | Raw fetch | `fetch('/api/...')` instead of `api` client |
 | Hardcoded paths | `href="/photos"` instead of `nav` helpers |
+
+### Automated Standards Enforcement
+
+All generated code MUST pass `npm run check:standards`. This script runs automatically:
+- **Pre-push hook**: Blocks push if standards fail
+- **GitHub Actions**: CI fails if standards fail
+
+| Check | Rule | Severity |
+|-------|------|----------|
+| `no-generic-names` | No `utils.ts`, `helpers.ts`, `misc.ts` | ERROR |
+| `layer-violation` | `app/` cannot import from `lib/db` directly | ERROR |
+| `no-cross-feature-imports` | Features cannot import from other features | ERROR |
+| `no-cross-api-imports` | API routes cannot import from other API routes | ERROR |
+| `no-hardcoded-values` | No hardcoded URLs/IPs/secrets (with exceptions) | WARNING |
+| `type-safety` | No `any`, `@ts-ignore`, `@ts-nocheck` | WARNING |
+| `use-api-client` | Use `api` client, not raw `fetch('/api/...')` | WARNING |
+| `use-nav-helpers` | Use `nav` helpers, not hardcoded paths | WARNING |
+| `missing-readme` | Feature folders must have README.md | WARNING |
+
+**Self-validation before finalizing code:**
+```
+□ Would this pass npm run check:standards?
+□ Are there any layer violations?
+□ Are there any cross-feature imports?
+□ Are all URLs in the allowed list or config?
+□ Are all types properly defined (no any)?
+□ Are nav helpers used for all internal links?
+```
 
 ### When User Requests Violating Code
 
@@ -370,4 +398,16 @@ Should I proceed?"
 □ API config/types updated?
 □ Tests updated?
 □ Stale references fixed?
+```
+
+**Standards Validation (REQUIRED):**
+```
+Before committing, verify code passes: npm run check:standards
+
+Allowed URL patterns (won't trigger warnings):
+- schema.org (JSON-LD structured data)
+- unsplash.com / images.unsplash.com (image CDN)
+- xmlns / w3.org (XML/SVG namespaces)
+- example.com (placeholder URLs)
+- localhost (development)
 ```

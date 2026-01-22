@@ -21,10 +21,36 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ❌ Imports from one API route into another (e.g., `api/professionals/` → `api/photos/`)
 - ❌ Imports `lib/db` directly in UI components or pages
 - ❌ Uses generic file names (`utils.ts`, `helpers.ts`, `misc.ts`)
-- ❌ Contains hardcoded URLs, IPs, or secrets
-- ❌ Uses `any` type or `@ts-ignore`
+- ❌ Contains hardcoded URLs, IPs, or secrets (except allowed: schema.org, unsplash, xmlns, w3.org)
+- ❌ Uses `any` type or `@ts-ignore` or `@ts-nocheck`
 - ❌ Uses raw `fetch()` for internal API calls (use `api` client)
 - ❌ Uses hardcoded route paths (use `nav` helpers)
+
+### Automated Standards Enforcement
+
+All generated code MUST pass `npm run check:standards`. This script enforces:
+
+| Check | Rule | Severity |
+|-------|------|----------|
+| `no-generic-names` | No `utils.ts`, `helpers.ts`, `misc.ts` | ERROR |
+| `layer-violation` | `app/` cannot import from `lib/db` directly | ERROR |
+| `no-cross-feature-imports` | Features cannot import from other features | ERROR |
+| `no-cross-api-imports` | API routes cannot import from other API routes | ERROR |
+| `no-hardcoded-values` | No hardcoded URLs/IPs/secrets (with exceptions) | WARNING |
+| `type-safety` | No `any`, `@ts-ignore`, `@ts-nocheck` | WARNING |
+| `use-api-client` | Use `api` client, not raw `fetch('/api/...')` | WARNING |
+| `use-nav-helpers` | Use `nav` helpers, not hardcoded paths | WARNING |
+| `missing-readme` | Feature folders must have README.md | WARNING |
+
+**Before finalizing any code generation:**
+```
+□ Would this pass npm run check:standards?
+□ Are there any layer violations?
+□ Are there any cross-feature imports?
+□ Are all URLs in the allowed list or config?
+□ Are all types properly defined (no any)?
+□ Are nav helpers used for all internal links?
+```
 
 ### AI Must ALWAYS:
 
@@ -422,4 +448,16 @@ Constants            →  lib/constants/
 □ API config/types updated?
 □ Tests updated?
 □ Stale references fixed?
+```
+
+**Standards Validation (REQUIRED):**
+```
+Before committing, verify code passes: npm run check:standards
+
+Allowed URL patterns (won't trigger warnings):
+- schema.org (JSON-LD structured data)
+- unsplash.com / images.unsplash.com (image CDN)
+- xmlns / w3.org (XML/SVG namespaces)
+- example.com (placeholder URLs)
+- localhost (development)
 ```
