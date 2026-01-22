@@ -16,7 +16,7 @@ fi
 
 # Run architecture tests
 echo "🏗️  Running architecture tests..."
-npm test -- --testPathPattern=architecture --passWithNoTests --silent
+npm test -- architecture --passWithNoTests --silent
 
 if [ $? -ne 0 ]; then
   echo ""

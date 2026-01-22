@@ -22,7 +22,10 @@
       "Bash(pkill:*)",
       "Bash(npx ts-node:*)",
       "Bash(git commit:*)",
-      "Bash(xargs kill:*)"
+      "Bash(xargs kill:*)",
+      "Bash(grep:*)",
+      "Bash(npm run lint:*)",
+      "Bash(git push)"
     ]
   }
 }
