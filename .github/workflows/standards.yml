@@ -165,7 +165,7 @@ jobs:
         run: npm ci
       
       - name: Run architecture tests
-        run: npm test -- --testPathPattern=architecture --passWithNoTests
+        run: npm test -- architecture --passWithNoTests
 
   build:
     name: Build Check
