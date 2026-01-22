@@ -2,6 +2,21 @@
 
 This directory contains pages for the professional directory - showcasing kitchen design professionals with their portfolios, reviews, and AI-powered consultation features.
 
+## Responsibilities
+
+**What this feature handles:**
+- Displaying a directory of kitchen design professionals
+- Individual professional profile pages with portfolios
+- Professional reviews and ratings display
+- AI-powered consultation chat interface
+- SEO optimization with structured data (JSON-LD)
+
+**What this feature does NOT handle:**
+- User authentication or account management
+- Photo management (handled by `photos/` feature)
+- Contact form processing (handled by `api/contact/`)
+- Professional account creation or editing
+
 ## Routes
 
 | Route | File | Description |
@@ -185,15 +200,16 @@ interface ProfessionalDetails {
 }
 ```
 
-## Supporting Components
+## Key Components
 
 | Component | File | Purpose |
 |-----------|------|---------|
-| `ProfessionalsList` | `ProfessionalsList.tsx` | List of professional cards |
-| `ContactSection` | `[id]/ContactSection.tsx` | AI chat interface |
+| `ProfessionalsList` | `ProfessionalsList.tsx` | List of professional cards with search/sort |
+| `ProfessionalRow` | `ProfessionalRow.tsx` | Individual professional card in listing |
+| `ContactSection` | `[id]/ContactSection.tsx` | AI chat interface wrapper |
 | `PhotoCard` | `[id]/PhotoCard.tsx` | Portfolio photo card |
+| `BackButton` | `[id]/BackButton.tsx` | Navigation back button |
 | `PhotoGalleryRegistrar` | `[id]/PhotoGalleryRegistrar.tsx` | Registers photos with gallery context |
-| `ContactSectionSkeleton` | Inline | Loading placeholder |
 
 ## Context Providers
 
