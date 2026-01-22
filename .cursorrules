@@ -32,7 +32,9 @@ You are an AI coding assistant working on a Next.js 16 kitchen design gallery wi
 
 ### Automated Standards Enforcement
 
-All generated code MUST pass `npm run check:standards`. This script runs automatically:
+All generated code MUST pass `npm run check:standards`. For detailed explanations of each standard with examples, see `docs/STANDARDS.md`.
+
+This script runs automatically:
 - **Pre-push hook**: Blocks push if standards fail
 - **GitHub Actions**: CI fails if standards fail
 

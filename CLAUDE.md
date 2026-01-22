@@ -28,7 +28,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### Automated Standards Enforcement
 
-All generated code MUST pass `npm run check:standards`. This script enforces:
+All generated code MUST pass `npm run check:standards`. For detailed explanations of each standard with examples, see `docs/STANDARDS.md`.
+
+This script enforces:
 
 | Check | Rule | Severity |
 |-------|------|----------|

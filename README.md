@@ -144,6 +144,8 @@ tests/                        # Test files
 
 For detailed architecture documentation, see `ARCHITECTURE.md`.
 
+For code standards and how they're enforced, see `docs/STANDARDS.md`.
+
 ### Three-Layer Architecture
 
 ```
