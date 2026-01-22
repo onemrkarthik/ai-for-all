@@ -1,24 +1,26 @@
-# Code Standards Guide
+# Engineering Standards & Architecture Guide
 
-This guide explains the coding standards enforced in this project. These standards help us maintain a clean, consistent, and maintainable codebase that's easy for everyone to work with.
+**Version:** 2.0.0
+**Status:** Enforced
+**Last Updated:** 2026-01-22
+**References:** Google (TypeScript), Airbnb (React), Clean Architecture, Project Constraints
+
+This document defines the engineering standards for our full-stack codebase. It synthesizes industry-best architectural patterns with strict operational enforcement to ensure scalability, maintainability, and developer velocity.
+
+---
 
 ## Table of Contents
 
 1. [Quick Reference](#quick-reference)
-2. [Why Standards Matter](#why-standards-matter)
-3. [How Standards Are Enforced](#how-standards-are-enforced)
-4. [Standards Explained](#standards-explained)
-   - [File Naming](#1-file-naming)
-   - [Layer Separation](#2-layer-separation)
-   - [Feature Isolation](#3-feature-isolation)
-   - [Type Safety](#4-type-safety)
-   - [API Client Usage](#5-api-client-usage)
-   - [Navigation Helpers](#6-navigation-helpers)
-   - [No Hardcoded Values](#7-no-hardcoded-values)
-   - [Documentation](#8-documentation)
-5. [Running Checks Locally](#running-checks-locally)
-6. [Fixing Violations](#fixing-violations)
-7. [For AI Assistants](#for-ai-assistants)
+2. [Core Architectural Principles](#core-architectural-principles)
+3. [Workflow & Enforcement](#workflow--enforcement)
+4. [Project Structure & Naming](#project-structure--naming)
+5. [Frontend Standards (React/Next.js)](#frontend-standards-reactnextjs)
+6. [Backend Standards (TypeScript/Node)](#backend-standards-typescriptnode)
+7. [Database Standards](#database-standards)
+8. [Operational Safety](#operational-safety)
+9. [Fixing Violations](#fixing-violations)
+10. [For AI Assistants](#for-ai-assistants)
 
 ---
 
@@ -41,357 +43,124 @@ This guide explains the coding standards enforced in this project. These standar
 
 ---
 
-## Why Standards Matter
+## Core Architectural Principles
 
-### For New Team Members
-- **Consistency**: Code looks the same everywhere, making it easier to learn
-- **Discoverability**: Find what you need by following predictable patterns
-- **Onboarding**: Less time figuring out "how we do things here"
+We follow a **Clean Architecture** approach. The goal is to create a system where business logic is independent of the UI, database, and external frameworks.
 
-### For the Codebase
-- **Maintainability**: Changes in one area don't break unrelated code
-- **Scalability**: New features can be added without creating a tangled mess
-- **Security**: Prevents common vulnerabilities like exposed secrets
+### The Dependency Rule
 
-### For the Team
-- **Code Reviews**: Less time debating style, more time on logic
-- **Collaboration**: Everyone can work on any part of the codebase
-- **AI Assistance**: AI tools (Claude, Cursor) generate compliant code automatically
+Dependencies must always point **inwards** (toward stability and abstraction).
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                        INTERFACE LAYER                       │
+│              (app/, app/api/, app/components/)               │
+│                    UI, API Routes, Pages                     │
+└─────────────────────────────┬───────────────────────────────┘
+                              │ depends on
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                         LOGIC LAYER                          │
+│              (lib/api/, lib/navigation/, lib/services/)      │
+│               Business Rules, Use Cases, Validation          │
+└─────────────────────────────┬───────────────────────────────┘
+                              │ depends on
+                              ▼
+┌─────────────────────────────────────────────────────────────┐
+│                          DATA LAYER                          │
+│                    (lib/db/, lib/services/)                  │
+│                Database, External APIs, Storage              │
+└─────────────────────────────────────────────────────────────┘
+```
+
+**Key Rules:**
+- **Interface Layer** can import from Logic Layer
+- **Logic Layer** can import from Data Layer
+- **Nothing** imports upward (Data Layer never imports from Interface)
+- **Same-layer imports** are allowed within the same feature
+
+### Why This Matters
+
+| Without Clean Architecture | With Clean Architecture |
+|---------------------------|------------------------|
+| Changing the database breaks the UI | Database changes are isolated |
+| UI code is full of SQL queries | UI only knows about data shapes |
+| Testing requires a real database | Business logic is easily unit tested |
+| One developer's change breaks another's | Changes are localized |
+
+### Feature Isolation (Vertical Slices)
+
+**Rule:** Features cannot import from other features.
+
+**Why:** Prevents "Spaghetti Code" where changing the `photos` module breaks the `professionals` module.
+
+```
+app/
+├── professionals/     ❌ Cannot import from photos/, styles/, etc.
+├── photos/            ❌ Cannot import from professionals/, styles/, etc.
+├── styles/            ❌ Cannot import from professionals/, photos/, etc.
+├── api/
+│   ├── professionals/ ❌ Cannot import from api/photos/, api/contact/
+│   ├── photos/        ❌ Cannot import from api/professionals/
+│   └── contact/       ❌ Cannot import from api/professionals/
+├── components/        ✅ SHARED - any feature can import
+└── lib/               ✅ SHARED - any feature can import
+```
+
+**When two features need the same code:**
+
+| Need to Share | Put It In |
+|--------------|-----------|
+| UI Components | `app/components/` |
+| Business Logic | `lib/services/` |
+| Type Definitions | `lib/types/` or feature's `types.ts` |
+| Utilities | `lib/[specific-name].ts` |
 
 ---
 
-## How Standards Are Enforced
+## Workflow & Enforcement
 
-Standards are checked at multiple points to catch issues early:
+We rely on **automation over debate**. Standards are checked at multiple stages.
+
+### Enforcement Pipeline
 
 ```
-You write code
-       ↓
-   git commit
-       ↓
-   Pre-commit hook runs ESLint (auto-fixes formatting)
-       ↓
-   git push
-       ↓
-   Pre-push hook runs:
-   ├── TypeScript type checking
-   ├── Standards check (npm run check:standards)
-   └── Architecture tests (npm test)
-       ↓
-   If any check fails → Push is blocked
-       ↓
-   If all pass → Code goes to GitHub
-       ↓
-   GitHub Actions runs same checks (backup verification)
+┌──────────────┐     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+│  Write Code  │ ──▶ │  git commit  │ ──▶ │   git push   │ ──▶ │   GitHub     │
+└──────────────┘     └──────┬───────┘     └──────┬───────┘     └──────┬───────┘
+                            │                    │                    │
+                            ▼                    ▼                    ▼
+                     ┌──────────────┐     ┌──────────────┐     ┌──────────────┐
+                     │   ESLint     │     │  Pre-push    │     │   CI/CD      │
+                     │   (auto-fix) │     │   Hooks      │     │   Actions    │
+                     └──────┬───────┘     └──────┬───────┘     └──────────────┘
+                            │                    │
+                            │             ┌──────┴──────┐
+                            │             │             │
+                            ▼             ▼             ▼
+                     ┌──────────┐  ┌───────────┐  ┌───────────┐
+                     │ Prettier │  │TypeScript │  │ Standards │
+                     │  format  │  │  check    │  │   check   │
+                     └──────────┘  └───────────┘  └─────┬─────┘
+                                                       │
+                                                       ▼
+                                                ┌───────────┐
+                                                │Architecture│
+                                                │   tests   │
+                                                └───────────┘
 ```
 
 ### What Gets Checked When
 
-| Check | When It Runs | What It Does |
-|-------|--------------|--------------|
-| ESLint | On commit | Fixes formatting, catches syntax issues |
-| Type Check | On push | Ensures TypeScript types are correct |
-| Standards Check | On push | Verifies architectural rules |
-| Architecture Tests | On push | Tests file structure and imports |
-| GitHub Actions | On PR/push | Runs all checks in CI environment |
-
----
-
-## Standards Explained
-
-### 1. File Naming
-
-**Rule**: Don't use generic file names like `utils.ts`, `helpers.ts`, or `misc.ts`
-
-**Why**: Generic names become dumping grounds for unrelated code. Six months later, nobody knows what's in `utils.ts` or where to find specific functionality.
-
-**Bad Example**:
-```
-lib/
-├── utils.ts        ← What's in here? Everything!
-├── helpers.ts      ← How is this different from utils?
-└── misc.ts         ← The junk drawer
-```
-
-**Good Example**:
-```
-lib/
-├── dateFormatting.ts    ← Formats dates
-├── priceCalculation.ts  ← Calculates prices
-└── validation.ts        ← Validates input
-```
-
-**How to Fix**: Rename generic files to describe their specific purpose. If a file has multiple unrelated functions, split it into separate files.
-
----
-
-### 2. Layer Separation
-
-**Rule**: UI code (components, pages) cannot directly import from the database layer (`lib/db`)
-
-**Why**: This keeps our code organized into clear responsibilities:
-- **Interface Layer** (`app/`): What users see and interact with
-- **Logic Layer** (`lib/services/`): Business rules and data processing
-- **Data Layer** (`lib/db/`): Database operations
-
-**Bad Example**:
-```typescript
-// ❌ app/components/PhotoCard.tsx
-import { db } from '@/lib/db';  // Component directly accessing database!
-
-function PhotoCard({ id }) {
-  const photo = db.prepare('SELECT * FROM photos WHERE id = ?').get(id);
-  // ...
-}
-```
-
-**Good Example**:
-```typescript
-// ✅ app/components/PhotoCard.tsx
-import { api } from '@/lib/api';
-
-function PhotoCard({ id }) {
-  const photo = await api.photos.get(id);  // Uses API client
-  // ...
-}
-
-// ✅ lib/services/photos.ts (handles the database work)
-import { db } from '@/lib/db';
-
-export function getPhotoById(id: number) {
-  return db.prepare('SELECT * FROM photos WHERE id = ?').get(id);
-}
-```
-
-**How to Fix**: Move database operations to `lib/services/`, then call those services from your components via the API client.
-
----
-
-### 3. Feature Isolation
-
-**Rule**: Feature folders cannot import from other feature folders
-
-**Why**: This prevents features from becoming tangled together. If "photos" imports from "professionals" and vice versa, changing one breaks the other.
-
-**Project Structure**:
-```
-app/
-├── professionals/    ← Feature A
-├── photos/           ← Feature B
-├── styles/           ← Feature C
-├── components/       ← SHARED (anyone can use)
-└── api/
-    ├── professionals/  ← API for Feature A
-    ├── photos/         ← API for Feature B
-    └── contact/        ← API for Feature C
-```
-
-**Bad Example**:
-```typescript
-// ❌ app/professionals/[id]/page.tsx
-import { PhotoCard } from '@/app/photos/components/PhotoCard';  // Cross-feature!
-```
-
-**Good Example**:
-```typescript
-// ✅ app/professionals/[id]/page.tsx
-import { PhotoCard } from '@/app/components/PhotoCard';  // Shared component
-```
-
-**How to Fix**: If two features need the same code:
-1. **UI Components** → Move to `app/components/`
-2. **Business Logic** → Move to `lib/services/`
-3. **Utilities** → Move to `lib/`
-
----
-
-### 4. Type Safety
-
-**Rule**: Don't use `any` type, `@ts-ignore`, or `@ts-nocheck`
-
-**Why**: TypeScript catches bugs before they reach users. Using `any` or ignoring errors defeats this purpose.
-
-**Bad Examples**:
-```typescript
-// ❌ Using 'any'
-function processData(data: any) {  // Could be anything!
-  return data.name.toUpperCase();  // Might crash if data.name doesn't exist
-}
-
-// ❌ Ignoring TypeScript errors
-// @ts-ignore
-const result = someFunction(wrongArgument);
-```
-
-**Good Examples**:
-```typescript
-// ✅ Define proper types
-interface UserData {
-  name: string;
-  email: string;
-}
-
-function processData(data: UserData) {
-  return data.name.toUpperCase();  // TypeScript knows this is safe
-}
-
-// ✅ Fix the actual error instead of ignoring
-const result = someFunction(correctArgument);
-```
-
-**How to Fix**:
-- Define interfaces for your data structures
-- Use type imports from `@/lib/api/types` or `@/lib/db/types`
-- If you're unsure of a type, use `unknown` and add type guards
-
----
-
-### 5. API Client Usage
-
-**Rule**: Use the typed API client instead of raw `fetch()` for internal API calls
-
-**Why**: The API client provides:
-- **Type safety**: Know exactly what data you're getting back
-- **Consistency**: Same error handling everywhere
-- **Maintainability**: Change a URL once, it updates everywhere
-
-**Bad Example**:
-```typescript
-// ❌ Raw fetch
-const response = await fetch('/api/photos/123');
-const data = await response.json();  // What type is this? 🤷
-```
-
-**Good Example**:
-```typescript
-// ✅ Typed API client
-import { api } from '@/lib/api';
-
-const photo = await api.photos.get(123);  // TypeScript knows this is a Photo
-```
-
-**Available API Methods**:
-| Method | Purpose |
-|--------|---------|
-| `api.feed.list({ offset, limit, filters })` | Get photo feed |
-| `api.photos.get(id)` | Get photo details |
-| `api.professionals.get(id)` | Get professional details |
-| `api.contact.init(body)` | Start a conversation |
-| `api.contact.chat(body)` | Send a message |
-| `api.contact.latest(photoId)` | Get latest conversation |
-
----
-
-### 6. Navigation Helpers
-
-**Rule**: Use navigation helpers instead of hardcoded paths
-
-**Why**: If we rename a route, we only need to update one place instead of finding every hardcoded string.
-
-**Bad Example**:
-```typescript
-// ❌ Hardcoded paths
-<Link href="/professionals/5">View Profile</Link>
-<Link href="/?photo=123">View Photo</Link>
-```
-
-**Good Example**:
-```typescript
-// ✅ Navigation helpers
-import { nav } from '@/lib/navigation';
-
-<Link href={nav.professionals.detail(5)}>View Profile</Link>
-<Link href={nav.home.index({ photo: 123 })}>View Photo</Link>
-```
-
-**Available Navigation Helpers**:
-| Helper | Result |
-|--------|--------|
-| `nav.home.index()` | `"/"` |
-| `nav.home.index({ photo: 123 })` | `"/?photo=123"` |
-| `nav.professionals.detail(5)` | `"/professionals/5"` |
-| `nav.photos.ideas()` | `"/photos/ideas"` |
-| `nav.styles.detail('modern')` | `"/styles/modern"` |
-
----
-
-### 7. No Hardcoded Values
-
-**Rule**: Don't hardcode URLs, IP addresses, or secrets in code
-
-**Why**:
-- **Security**: Secrets in code get committed to git history forever
-- **Flexibility**: Different environments (dev, staging, prod) need different values
-- **Maintenance**: Changing a URL means searching the entire codebase
-
-**Bad Examples**:
-```typescript
-// ❌ Hardcoded URL
-const response = await fetch('https://api.example.com/data');
-
-// ❌ Hardcoded secret
-const apiKey = 'sk-1234567890abcdef';
-```
-
-**Good Examples**:
-```typescript
-// ✅ Use environment variables
-const response = await fetch(process.env.API_URL + '/data');
-
-// ✅ Secret in .env.local (not committed to git)
-const apiKey = process.env.API_KEY;
-```
-
-**Allowed URLs** (won't trigger warnings):
-- `schema.org` - For SEO structured data
-- `unsplash.com` - Image CDN
-- `localhost` - Development
-- `example.com` - Placeholder in documentation
-
----
-
-### 8. Documentation
-
-**Rule**: Feature folders should have a README.md file
-
-**Why**: READMEs help team members understand:
-- What the feature does
-- How to use it
-- Important implementation details
-
-**Example Structure**:
-```
-app/photos/
-├── README.md         ← Explains the photos feature
-├── [slug]/
-│   └── page.tsx
-└── page.tsx
-```
-
-**Minimum README Content**:
-```markdown
-# Feature Name
-
-Brief description of what this feature does.
-
-## Routes
-
-| Route | Description |
-|-------|-------------|
-| `/photos` | Photo listing page |
-| `/photos/[slug]` | Photo detail page |
-
-## Key Components
-
-- `PhotoCard` - Displays a single photo
-- `PhotoGallery` - Grid of photos
-```
-
----
-
-## Running Checks Locally
-
-Before pushing, you can run all checks locally:
+| Check | Trigger | What It Does | Failure Action |
+|-------|---------|--------------|----------------|
+| ESLint + Prettier | Commit | Fixes formatting, catches syntax | Auto-fixes most issues |
+| TypeScript | Push | Ensures types are correct | **Blocks push** |
+| Standards Check | Push | Verifies architectural rules | **Blocks push** (errors) |
+| Architecture Tests | Push | Tests file structure and imports | **Blocks push** |
+| GitHub Actions | PR/Push | Runs all checks in CI | **Blocks merge** |
+
+### Running Checks Locally
 
 ```bash
 # Run all checks (same as pre-push)
@@ -404,9 +173,462 @@ npm test                  # Architecture tests
 npm run lint              # ESLint (also auto-fixes)
 ```
 
+---
+
+## Project Structure & Naming
+
+### The "No Utils" Rule
+
+**Rule:** Do not use generic names like `utils.ts`, `helpers.ts`, or `common.ts`
+
+**Why:** Generic names become junk drawers. After six months, nobody knows what's in `utils.ts` or where to find specific functionality.
+
+**Bad:**
+```
+lib/
+├── utils.ts        ← What's in here? Everything!
+├── helpers.ts      ← How is this different from utils?
+└── misc.ts         ← The junk drawer
+```
+
+**Good:**
+```
+lib/
+├── dateFormatting.ts    ← Formats dates
+├── priceCalculation.ts  ← Calculates prices
+└── inputValidation.ts   ← Validates input
+```
+
+### Directory Layout
+
+We use a **Domain-Driven** structure with clear layer separation:
+
+```
+app/                          # INTERFACE LAYER
+├── api/                      # Backend API routes
+│   ├── contact/              # Contact feature API
+│   ├── feed/                 # Photo feed API
+│   ├── photos/               # Photos API
+│   └── professionals/        # Professionals API
+├── components/               # SHARED UI components
+├── professionals/            # Professionals feature pages
+├── photos/                   # Photos feature pages
+├── styles/                   # Kitchen styles feature pages
+├── layout.tsx                # Root layout
+├── page.tsx                  # Home page
+└── globals.css               # Global styles
+
+lib/                          # LOGIC + DATA LAYERS
+├── api/                      # Typed API client (Logic)
+│   ├── client.ts             # API methods
+│   ├── config.ts             # Route configuration
+│   ├── types.ts              # Request/response types
+│   └── builder.ts            # URL construction
+├── navigation/               # Typed routing (Logic)
+│   ├── routes.ts             # Route definitions
+│   └── index.ts              # Nav helpers
+├── services/                 # Business logic + queries
+│   ├── chat.ts               # Chat operations
+│   ├── photos.ts             # Photo operations
+│   └── professionals.ts      # Professional operations
+├── db/                       # Database layer (Data)
+│   ├── connection.ts         # DB connection
+│   ├── schema.ts             # Schema definitions
+│   └── types.ts              # Row type interfaces
+└── ai.ts                     # External AI integration
+```
+
+---
+
+## Frontend Standards (React/Next.js)
+
+*Based on Airbnb React Style Guide & Next.js Best Practices*
+
+### Component Design Patterns
+
+#### Server vs Client Components
+
+| Use Server Components (default) | Use Client Components (`'use client'`) |
+|--------------------------------|---------------------------------------|
+| Data fetching | Event handlers (onClick, onChange) |
+| Database access (via services) | Browser APIs (localStorage, etc.) |
+| Static content | State management (useState, useReducer) |
+| Sensitive logic | Effects (useEffect) |
+
+#### Compound Components (for complex UI)
+
+Use compound components to avoid "Prop Drilling" and create flexible APIs.
+
+**Bad (Prop Explosion):**
+```tsx
+// ❌ Too many props, hard to extend
+<Modal
+  isOpen={open}
+  title="Edit Profile"
+  subtitle="Update your information"
+  primaryAction={save}
+  primaryActionLabel="Save"
+  secondaryAction={cancel}
+  secondaryActionLabel="Cancel"
+  showCloseButton={true}
+  closeOnOverlayClick={true}
+  size="large"
+/>
+```
+
+**Good (Compound Components):**
+```tsx
+// ✅ Flexible, composable, self-documenting
+<Modal isOpen={open} onClose={close}>
+  <Modal.Header>
+    <Modal.Title>Edit Profile</Modal.Title>
+    <Modal.Subtitle>Update your information</Modal.Subtitle>
+  </Modal.Header>
+  <Modal.Body>
+    <ProfileForm />
+  </Modal.Body>
+  <Modal.Footer>
+    <Button variant="secondary" onClick={cancel}>Cancel</Button>
+    <Button variant="primary" onClick={save}>Save</Button>
+  </Modal.Footer>
+</Modal>
+```
+
+### Navigation & API Integration
+
+**Rule:** Never use raw strings for internal links or fetch calls.
+
+**Why:** Refactoring a route shouldn't require a global find-and-replace.
+
+**Bad:**
+```tsx
+// ❌ Hardcoded - breaks if routes change
+fetch('/api/photos/123');
+<Link href="/professionals/5">View Profile</Link>
+<Link href="/?photo=123">Open Photo</Link>
+```
+
+**Good:**
+```tsx
+// ✅ Typed helpers - refactor-safe
+import { api } from '@/lib/api';
+import { nav } from '@/lib/navigation';
+
+const photo = await api.photos.get(123);
+<Link href={nav.professionals.detail(5)}>View Profile</Link>
+<Link href={nav.home.index({ photo: 123 })}>Open Photo</Link>
+```
+
+**Available API Methods:**
+
+| Method | Purpose |
+|--------|---------|
+| `api.feed.list({ offset, limit, filters })` | Get photo feed with filters |
+| `api.photos.get(id)` | Get photo details |
+| `api.professionals.get(id)` | Get professional details |
+| `api.contact.init(body)` | Start a conversation |
+| `api.contact.chat(body)` | Send a message |
+| `api.contact.latest(photoId)` | Get latest conversation |
+
+**Available Navigation Helpers:**
+
+| Helper | Result |
+|--------|--------|
+| `nav.home.index()` | `"/"` |
+| `nav.home.index({ photo: 123 })` | `"/?photo=123"` |
+| `nav.professionals.detail(5)` | `"/professionals/5"` |
+| `nav.photos.ideas()` | `"/photos/ideas"` |
+| `nav.styles.detail('modern')` | `"/styles/modern"` |
+
+### Context & State Management
+
+**Pattern:** Split contexts to prevent unnecessary re-renders.
+
+```tsx
+// ✅ Separate state from actions
+const PhotoGalleryStateContext = createContext<State>({});
+const PhotoGalleryActionsContext = createContext<Actions>({});
+
+// Components using only actions don't re-render on state changes
+export function usePhotoGalleryActions() {
+  return useContext(PhotoGalleryActionsContext);
+}
+```
+
+---
+
+## Backend Standards (TypeScript/Node)
+
+*Based on Google TypeScript Style Guide*
+
+### Layer Separation
+
+**Rule:** UI Code (`app/`) cannot import `lib/db`.
+
+**Why:** The frontend should communicate with the backend via APIs/Services, even in Server Components. This allows:
+- Swapping databases without touching UI code
+- Unit testing business logic without a database
+- Clear ownership boundaries
+
+**Bad:**
+```tsx
+// ❌ app/page.tsx - UI directly accessing database
+import { db } from '@/lib/db';
+
+export default function Page() {
+  const photos = db.prepare('SELECT * FROM photos').all();
+  return <Gallery photos={photos} />;
+}
+```
+
+**Good:**
+```tsx
+// ✅ app/page.tsx - UI uses service layer
+import { getPhotos } from '@/lib/services/photos';
+
+export default function Page() {
+  const photos = getPhotos({ offset: 0, limit: 20 });
+  return <Gallery photos={photos} />;
+}
+```
+
+### TypeScript Patterns
+
+#### No `any` Type
+
+**Rule:** Never use `any`. Use `unknown` if the type is truly unknown.
+
+**Bad:**
+```typescript
+// ❌ Disables type checking entirely
+function processData(data: any) {
+  return data.name.toUpperCase(); // Might crash!
+}
+```
+
+**Good:**
+```typescript
+// ✅ Define interfaces for your data
+interface UserData {
+  name: string;
+  email: string;
+}
+
+function processData(data: UserData) {
+  return data.name.toUpperCase(); // TypeScript knows this is safe
+}
+
+// ✅ Use unknown with type guards when truly unknown
+function processUnknown(data: unknown) {
+  if (typeof data === 'object' && data !== null && 'name' in data) {
+    return (data as { name: string }).name.toUpperCase();
+  }
+  throw new Error('Invalid data');
+}
+```
+
+#### Error Handling
+
+**Rule:** Use custom error classes, not generic objects.
+
+```typescript
+// ✅ Custom error class
+export class ApiError extends Error {
+  constructor(
+    public status: number,
+    message: string,
+    public body?: unknown
+  ) {
+    super(message);
+    this.name = 'ApiError';
+  }
+
+  isClientError(): boolean {
+    return this.status >= 400 && this.status < 500;
+  }
+}
+
+// Usage
+try {
+  const photo = await api.photos.get(123);
+} catch (error) {
+  if (error instanceof ApiError && error.status === 404) {
+    return notFound();
+  }
+  throw error;
+}
+```
+
+#### Async/Await
+
+**Rule:** Always use async/await, never raw `.then()` chains.
+
+```typescript
+// ❌ Promise chains are harder to read
+function getData() {
+  return fetch('/api/data')
+    .then(res => res.json())
+    .then(data => processData(data))
+    .catch(err => handleError(err));
+}
+
+// ✅ Async/await is clearer
+async function getData() {
+  try {
+    const res = await fetch('/api/data');
+    const data = await res.json();
+    return processData(data);
+  } catch (err) {
+    handleError(err);
+  }
+}
+```
+
+---
+
+## Database Standards
+
+### Type-Safe Queries
+
+**Rule:** All database queries must use typed row interfaces.
+
+```typescript
+// lib/db/types.ts - Define row shapes
+export interface PhotoRow {
+  id: number;
+  title: string;
+  source: string;
+  image_url: string;
+  description?: string;
+}
+
+// lib/services/photos.ts - Use the types
+import type { PhotoRow } from '@/lib/db/types';
+
+export function getPhotoById(id: number): PhotoRow | undefined {
+  return db.prepare(
+    'SELECT * FROM photos WHERE id = ?'
+  ).get(id) as PhotoRow | undefined;
+}
+```
+
+### Schema Management
+
+| Practice | Rule |
+|----------|------|
+| Schema Location | All definitions in `lib/db/schema.ts` |
+| Migrations | Never edit a migration after merge; create a new one |
+| Foreign Keys | Always define with proper CASCADE rules |
+| Indexes | Index foreign keys and columns in WHERE clauses |
+
+### Query Patterns
+
+```typescript
+// ✅ Use prepared statements (automatic with better-sqlite3)
+const stmt = db.prepare('SELECT * FROM photos WHERE id = ?');
+const photo = stmt.get(id);
+
+// ✅ Use transactions for multi-table operations
+db.transaction(() => {
+  db.prepare('INSERT INTO photos ...').run(...);
+  db.prepare('INSERT INTO photo_attributes ...').run(...);
+})();
+```
+
+---
+
+## Operational Safety
+
+### No Hardcoded Values
+
+**Rule:** URLs, secrets, and configuration must be environment variables.
+
+**Bad:**
+```typescript
+// ❌ Hardcoded values
+const API_URL = 'https://api.production.com';
+const API_KEY = 'sk-1234567890abcdef';
+```
+
+**Good:**
+```typescript
+// ✅ Environment variables
+const API_URL = process.env.API_URL;
+const API_KEY = process.env.API_KEY;
+```
+
+**Allowed URLs** (won't trigger warnings):
+- `schema.org` - SEO structured data
+- `unsplash.com` / `images.unsplash.com` - Image CDN
+- `localhost` - Development
+- `example.com` - Documentation placeholders
+- `w3.org` - W3C standards
+
+### Feature Documentation
+
+**Rule:** Every feature folder must have a `README.md`.
+
+**Required Format:**
+
+```markdown
+# [Feature Name]
+
+Brief description of what this feature does.
+
+## Responsibilities
+
+- What this feature handles
+- What it does NOT handle (boundaries)
+
+## Routes
+
+| Route | Description |
+|-------|-------------|
+| `/feature` | Main page |
+| `/feature/[id]` | Detail page |
+
+## Key Components
+
+| Component | Purpose |
+|-----------|---------|
+| `FeatureCard` | Displays a single item |
+| `FeatureList` | Grid/list of items |
+
+## API Dependencies
+
+| Endpoint | Usage |
+|----------|-------|
+| `api.feature.list()` | Load items |
+| `api.feature.get(id)` | Load details |
+
+## Data Flow
+
+```
+User Action → Component → API Client → API Route → Service → Database
+```
+```
+
+---
+
+## Fixing Violations
+
+### Quick Fixes by Error Type
+
+| Error | Quick Fix |
+|-------|-----------|
+| Generic file name | Rename to describe purpose: `utils.ts` → `dateFormatting.ts` |
+| Layer violation | Move DB code to `lib/services/`, use API client in UI |
+| Cross-feature import | Move shared code to `app/components/` or `lib/` |
+| Cross-API import | Move shared logic to `lib/services/` |
+| `any` type | Define an interface in `lib/types/` or locally |
+| `@ts-ignore` | Fix the underlying type error |
+| Raw fetch | Use `api` client from `@/lib/api` |
+| Hardcoded path | Use `nav` helper from `@/lib/navigation` |
+| Hardcoded URL | Move to environment variable |
+| Missing README | Create README.md with required sections |
+
 ### Understanding Check Output
 
-**Standards Check Output**:
 ```
 🔍 Checking code standards...
 
@@ -432,28 +654,7 @@ npm run lint              # ESLint (also auto-fixes)
 ❌ Standards check FAILED
 ```
 
----
-
-## Fixing Violations
-
-### Quick Fixes by Error Type
-
-| Error | Quick Fix |
-|-------|-----------|
-| Generic file name | Rename to describe purpose: `utils.ts` → `dateFormatting.ts` |
-| Layer violation | Move DB code to `lib/services/`, use API client |
-| Cross-feature import | Move shared code to `app/components/` or `lib/` |
-| Cross-API import | Move shared logic to `lib/services/` |
-| `any` type | Define an interface in `lib/types/` or locally |
-| `@ts-ignore` | Fix the underlying type error |
-| Raw fetch | Use `api` client from `@/lib/api` |
-| Hardcoded path | Use `nav` helper from `@/lib/navigation` |
-| Hardcoded URL | Move to environment variable |
-| Missing README | Create README.md in feature folder |
-
 ### Getting Help
-
-If you're unsure how to fix a violation:
 
 1. **Check existing code** for similar patterns
 2. **Read ARCHITECTURE.md** for design decisions
@@ -464,35 +665,75 @@ If you're unsure how to fix a violation:
 
 ## For AI Assistants
 
-This project uses AI coding assistants (Claude Code, Cursor) that are configured to follow these standards automatically.
+**Instructions for Claude/Cursor/Copilot:**
 
-### How It Works
+### Before Generating Code
 
-1. **CLAUDE.md** and **.cursorrules** contain all standards
-2. AI reads these files before generating code
-3. AI refuses to generate code that violates standards
-4. AI suggests compliant alternatives
+1. **Read this document** and `CLAUDE.md` / `.cursorrules`
+2. **Identify the feature** - Which folder does this belong to?
+3. **Check the layer** - Interface, Logic, or Data?
+4. **Check for existing code** - Does `lib/` or `app/components/` have this?
 
-### If AI Generates Non-Compliant Code
+### Strict Mode Rules
 
-The automated checks will catch it:
-- Pre-push hook blocks the push
-- Error message explains the violation
-- AI can help fix the issue
+| Rule | Action |
+|------|--------|
+| Cross-feature import requested | **Refuse.** Suggest extracting to shared location. |
+| Database import in UI requested | **Refuse.** Suggest service layer pattern. |
+| `any` type suggested | **Refuse.** Ask for type definition or use `unknown`. |
+| Raw `fetch('/api/...')` | **Replace** with `api` client. |
+| Hardcoded route path | **Replace** with `nav` helper. |
+| Generic file name | **Suggest** specific name. |
 
-### AI Response to Violations
+### Response Template for Violations
 
-When you ask for code that would violate standards, AI will respond like:
+When asked to generate code that would violate standards:
 
 ```
-"I can't create this because it would import from photos/ into
-professionals/, which violates feature isolation.
+"I cannot fulfill this request because [ACTION] violates the
+[STANDARD NAME] standard.
 
-Instead, I'll:
-1. Extract shared code to lib/services/photoUtils.ts
-2. Have both features import from there
+**Why this matters:** [Brief explanation]
 
-Should I proceed?"
+**Recommended Fix:**
+1. [Step 1]
+2. [Step 2]
+
+Shall I generate the code using this compliant pattern?"
+```
+
+### Example Refusal
+
+**User:** "Import the PhotoCard from the photos feature into professionals"
+
+**AI Response:**
+```
+"I cannot import from `app/photos/` into `app/professionals/` because
+this violates the Feature Isolation standard.
+
+**Why this matters:** Cross-feature imports create tight coupling.
+Changing the photos feature would break the professionals feature.
+
+**Recommended Fix:**
+1. Move `PhotoCard` to `app/components/PhotoCard.tsx`
+2. Update `app/photos/` to import from `app/components/`
+3. Import from `app/components/` in `app/professionals/`
+
+Shall I generate the code with PhotoCard in the shared components folder?"
+```
+
+### Self-Validation Checklist
+
+Before finalizing any code generation:
+
+```
+□ Would this pass `npm run check:standards`?
+□ Are there any layer violations?
+□ Are there any cross-feature imports?
+□ Are all types properly defined (no any)?
+□ Are `api` client and `nav` helpers used?
+□ Are all URLs in the allowed list or environment variables?
+□ Does any new feature folder need a README?
 ```
 
 ---
@@ -500,17 +741,24 @@ Should I proceed?"
 ## Summary
 
 These standards exist to make our codebase:
-- **Predictable** - Same patterns everywhere
-- **Maintainable** - Changes don't cause ripple effects
-- **Secure** - No exposed secrets or vulnerabilities
-- **Collaborative** - Anyone can work on any part
+
+| Goal | How We Achieve It |
+|------|-------------------|
+| **Predictable** | Same patterns everywhere |
+| **Maintainable** | Changes don't cause ripple effects |
+| **Testable** | Business logic isolated from infrastructure |
+| **Secure** | No exposed secrets or vulnerabilities |
+| **Collaborative** | Anyone can work on any part |
+| **AI-Friendly** | Clear rules that AI assistants follow |
 
 When in doubt:
 1. **Ask** - The team is here to help
 2. **Check existing code** - Follow established patterns
 3. **Run the checks** - `npm run check:standards`
-4. **Use AI assistants** - They're trained on our standards
+4. **Use AI assistants** - They're trained on these standards
 
 ---
 
-*Last updated: 2026-01-22*
+**Version History:**
+- 2.0.0 (2026-01-22) - Added Clean Architecture principles, component patterns, database standards
+- 1.0.0 (2026-01-22) - Initial release
