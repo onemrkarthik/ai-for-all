@@ -2,6 +2,143 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+---
+
+## AI Behavior Directives
+
+> **CRITICAL**: These rules are NON-NEGOTIABLE. Claude must follow them for EVERY code generation task.
+
+### Before Generating ANY Code
+
+1. **Identify the feature** — Which feature folder does this belong to?
+2. **Check for isolation violations** — Will this import from another feature? If yes, STOP and refactor.
+3. **Check the layer** — Interface, logic, or data? Never mix.
+4. **Check for existing code** — Does `lib/` or `app/components/` already have this?
+
+### AI Must REFUSE To Generate Code That:
+
+- ❌ Imports from one feature into another (e.g., `professionals/` → `photos/`)
+- ❌ Imports from one API route into another (e.g., `api/professionals/` → `api/photos/`)
+- ❌ Imports `lib/db` directly in UI components or pages
+- ❌ Uses generic file names (`utils.ts`, `helpers.ts`, `misc.ts`)
+- ❌ Contains hardcoded URLs, IPs, or secrets
+- ❌ Uses `any` type or `@ts-ignore`
+- ❌ Uses raw `fetch()` for internal API calls (use `api` client)
+- ❌ Uses hardcoded route paths (use `nav` helpers)
+
+### AI Must ALWAYS:
+
+- ✅ Ask clarifying questions if the request would violate standards
+- ✅ Suggest extracting shared code to `app/components/` or `lib/` when needed
+- ✅ Propose the correct location before writing code
+- ✅ Use existing patterns from the codebase
+- ✅ Generate types for all data structures
+
+### When User Requests Violating Code
+
+If a user asks for code that violates these standards, Claude must:
+
+1. **Explain** why the request violates standards
+2. **Propose** a compliant alternative
+3. **Only proceed** with the compliant approach
+
+Example:
+```
+User: "Add a helper function to professionals/ that uses the photo formatting from photos/"
+
+Claude: "I can't import from photos/ into professionals/ as that violates feature isolation. 
+Instead, I'll:
+1. Extract the photo formatting logic to lib/services/photoFormatting.ts
+2. Update photos/ to import from there
+3. Have professionals/ also import from there
+
+Should I proceed with this approach?"
+```
+
+---
+
+## Team Standards
+
+> These rules apply to all code generation and modifications. Non-negotiable.
+
+### Core Principles
+
+1. **Single Responsibility** — Every file, function, component does ONE thing. If you say "and" when describing it, split it up.
+
+2. **Three-Layer Architecture** — Every feature has exactly three layers:
+   ```
+   interface/  → UI components, API endpoints (app/, app/api/)
+   logic/      → Business rules, validation (lib/services/, lib/api/)
+   data/       → Database operations (lib/db/, lib/services/)
+   ```
+
+3. **Feature Isolation** — Features cannot import from other features. Ever.
+   ```
+   app/
+   ├── professionals/     # Feature A
+   │   └── ❌ Cannot import from photos/ or styles/
+   ├── photos/            # Feature B  
+   │   └── ❌ Cannot import from professionals/ or styles/
+   ├── api/
+   │   ├── professionals/ # ❌ Cannot import from api/photos/
+   │   └── photos/        # ❌ Cannot import from api/professionals/
+   └── components/        # ✅ SHARED - any feature can import
+   ```
+   **If two features need the same code**: Extract to `app/components/` or `lib/`
+
+4. **Human Readable** — Non-technical team members must understand file names and structure. No `utils.js`, no `handleClick`, no clever code.
+
+5. **Shareable by Default** — No hardcoded values, no hidden dependencies, everything explicit and configurable.
+
+### Naming Conventions
+
+| Type | Pattern | Examples |
+|------|---------|----------|
+| Functions | verb + noun | `createPhoto`, `validateContact`, `fetchProfessional` |
+| Files | descriptive content | `photoGallery.tsx`, `chatService.ts` |
+| Folders | domain-based | `professionals/`, `photos/`, `contact/` |
+
+**Never use**: `utils.ts`, `helpers.ts`, `misc/`, `handleClick`, `processData`
+
+### Before Writing Code
+
+1. What ONE thing does this code do?
+2. Which layer: interface, logic, or data?
+3. Which folder does it belong in?
+4. Does similar code already exist in `lib/`?
+
+### Code Checklist
+
+- [ ] Single clear purpose per file
+- [ ] Descriptive names (no generic utils)
+- [ ] No hardcoded values
+- [ ] Layers not mixed (UI doesn't touch DB directly)
+- [ ] Types defined for all data structures
+
+### Anti-Patterns — Never Do These
+
+| Pattern | Fix |
+|---------|-----|
+| God file that does everything | Split into layers |
+| Growing `utils.ts` | Specific files: `dateFormat.ts`, `priceCalc.ts` |
+| UI component with DB calls | Use service layer |
+| Implicit dependencies | Import explicitly |
+| Clever compact code | Boring obvious code |
+| **Cross-feature imports** | Extract shared code to `app/components/` or `lib/` |
+| **API routes importing other API routes** | Extract shared logic to `lib/services/` |
+
+### Commit Messages
+
+```
+[feature] verb: description
+
+[photos] add: filtering by style
+[chat] fix: message ordering
+[lib] refactor: extract validation utilities
+```
+
+---
+
 ## Project Overview
 
 Kitchen design gallery with AI-powered professional consultation. Full-stack Next.js 16 application using React 19, TypeScript, SQLite (better-sqlite3), and Google Gemini AI.
@@ -17,7 +154,7 @@ Kitchen design gallery with AI-powered professional consultation. Full-stack Nex
 
 ```bash
 # 1. Clone and install (database auto-initializes on first install)
-git clone <repository-url>
+git clone git@github.com:onemrkarthik/ai-for-all.git
 cd ai-for-all
 npm install
 
@@ -108,7 +245,7 @@ The build includes a pre-check that scans for Houzz and IVY-related code pattern
 ### Push blocked with "Houzz/IVY namespace detected"
 Git hooks prevent pushing to Houzz or IVY-owned GitHub namespaces. If you see this error:
 1. You're trying to push to a forbidden organization (github.com/houzz/*, github.com/ivy/*, etc.)
-2. Use a different remote: `git remote set-url origin <your-repo-url>`
+2. Use a different remote: `git remote set-url origin git@github.com:onemrkarthik/ai-for-all.git`
 3. Hooks are installed via `npm run hooks:install` (auto-runs on npm install)
 
 ## Architecture
@@ -117,19 +254,34 @@ For detailed architecture documentation, see `ARCHITECTURE.md`.
 
 ### Key Directory Structure
 
-- `app/` - Next.js App Router pages and API routes
-  - `api/` - Backend API routes (contact, feed, photos, professionals)
-  - `components/` - React components (PhotoGallery, PhotoModal, ContactPane, etc.)
-  - `professionals/[id]/` - Professional profile pages with server-side streaming
-  - `styles/[style]/` - Kitchen style landing pages (Modern, Traditional, etc.)
-  - `photos/[slug]/` - Individual photo detail pages
-- `lib/` - Business logic and utilities
-  - `api/` - Type-safe API client (`api.photos.get()`, `api.contact.init()`, etc.)
-  - `navigation/` - Type-safe client navigation (`nav.home.index()`, `nav.professionals.detail()`)
-  - `services/` - Database query services (photos.ts, chat.ts)
-  - `db/` - Database connection (index.ts) and schema definitions (schema.ts)
-  - `ai.ts` - Google Gemini integration
-- `scripts/` - Database initialization scripts
+```
+app/                          # INTERFACE LAYER
+├── api/                      # Backend API routes
+│   ├── contact/              # Contact form endpoints
+│   ├── feed/                 # Photo feed endpoints
+│   ├── photos/               # Photo CRUD endpoints
+│   └── professionals/        # Professional endpoints
+├── components/               # React UI components
+│   ├── PhotoGallery.tsx      # Gallery display
+│   ├── PhotoModal.tsx        # Photo detail modal
+│   └── ContactPane.tsx       # Contact form UI
+├── professionals/[id]/       # Professional profile pages
+├── styles/[style]/           # Kitchen style landing pages
+└── photos/[slug]/            # Photo detail pages
+
+lib/                          # LOGIC + DATA LAYERS
+├── api/                      # Type-safe API client (logic)
+├── navigation/               # Type-safe routing (logic)
+├── services/                 # Business logic + queries
+│   ├── photos.ts             # Photo operations
+│   └── chat.ts               # Chat operations
+├── db/                       # DATA LAYER
+│   ├── index.ts              # Database connection
+│   └── schema.ts             # Schema definitions
+└── ai.ts                     # Gemini AI integration
+
+scripts/                      # Build & setup scripts
+```
 
 ### Server vs Client Components
 
@@ -161,3 +313,49 @@ SQLite with WAL mode. Schema defined in `lib/db/schema.ts`. Tables: photos, phot
 
 Required in `.env.local`:
 - `GOOGLE_API_KEY` - Google Gemini API key (get one at https://aistudio.google.com/apikey)
+
+---
+
+## AI Quick Reference Card
+
+**Copy-paste checklist before generating code:**
+
+```
+LOCATION CHECK:
+□ Feature folder: ________________
+□ Layer: [ ] interface  [ ] logic  [ ] data
+□ File name (no utils/helpers): ________________
+
+IMPORT CHECK:
+□ Importing from another feature? → STOP, extract to shared
+□ Importing from another API route? → STOP, extract to lib/services
+□ Importing lib/db in UI? → STOP, use service layer
+
+PATTERN CHECK:
+□ Using api client (not raw fetch)?
+□ Using nav helpers (not hardcoded paths)?
+□ Types defined for all data?
+□ No any/@ts-ignore?
+```
+
+**Import Rules Visual:**
+```
+✅ CAN IMPORT                    ❌ CANNOT IMPORT
+─────────────────────────────    ─────────────────────────────
+feature → app/components/        feature → other feature
+feature → lib/*                  api/X → api/Y
+api → lib/services/*             component → lib/db
+component → lib/api/*            page → lib/db
+```
+
+**Shared Code Destinations:**
+```
+Need to share...        Put it in...
+─────────────────────   ─────────────────────
+UI components        →  app/components/
+Business logic       →  lib/services/
+API client code      →  lib/api/
+Type definitions     →  lib/types/ or feature/types.ts
+Utilities            →  lib/[specificName].ts
+Constants            →  lib/constants/
+```
