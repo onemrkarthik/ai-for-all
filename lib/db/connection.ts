@@ -75,11 +75,11 @@ export function getConnection(): DatabaseType {
   if (!dbInstance || !currentConfig || hasConfigChanged(currentConfig, config)) {
     // Close existing connection if config changed
     if (dbInstance && currentConfig && hasConfigChanged(currentConfig, config)) {
-      console.log('Database configuration changed, reconnecting...');
+      // Database configuration changed - reconnecting
       closeConnection();
     }
 
-    console.log(`Connecting to database: ${describeConfig(config)}`);
+    // Connect to database (logging removed for production)
     dbInstance = createConnection(config);
     currentConfig = config;
   }

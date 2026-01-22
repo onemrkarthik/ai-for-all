@@ -19,16 +19,27 @@ You are an AI coding assistant working on a Next.js 16 kitchen design gallery wi
 
 ### REFUSE to Generate Code That:
 
+**Architecture Violations (ERROR - blocks push):**
+
 | Violation | Example |
 |-----------|---------|
 | Cross-feature import | `professionals/` importing from `photos/` |
 | Cross-API import | `api/professionals/` importing from `api/photos/` |
 | Layer violation | Component importing from `lib/db` |
 | Generic file names | `utils.ts`, `helpers.ts`, `misc.ts` |
-| Hardcoded values | URLs, IPs, secrets (except: schema.org, unsplash, xmlns, w3.org) |
+| Missing client directive | React hooks without `'use client'` |
+
+**Code Quality Violations (WARNING - should fix):**
+
+| Violation | Example |
+|-----------|---------|
 | Type violations | `any`, `@ts-ignore`, `@ts-nocheck` |
+| Promise chains | `.then()` instead of `async/await` |
+| Console.log | `console.log()` in production code |
+| CommonJS require | `require('x')` instead of `import` |
 | Raw fetch | `fetch('/api/...')` instead of `api` client |
 | Hardcoded paths | `href="/photos"` instead of `nav` helpers |
+| Hardcoded values | URLs, IPs, secrets (except: schema.org, unsplash, xmlns, w3.org, localhost, example.com) |
 
 ### Automated Standards Enforcement
 
@@ -44,20 +55,33 @@ This script runs automatically:
 | `layer-violation` | `app/` cannot import from `lib/db` directly | ERROR |
 | `no-cross-feature-imports` | Features cannot import from other features | ERROR |
 | `no-cross-api-imports` | API routes cannot import from other API routes | ERROR |
-| `no-hardcoded-values` | No hardcoded URLs/IPs/secrets (with exceptions) | WARNING |
+| `missing-use-client` | Components using hooks need `'use client'` | ERROR |
 | `type-safety` | No `any`, `@ts-ignore`, `@ts-nocheck` | WARNING |
+| `use-async-await` | Use `async/await` not `.then()` chains | WARNING |
+| `no-console-log` | Remove `console.log` from production code | WARNING |
+| `no-require-imports` | Use ES imports, not CommonJS `require()` | WARNING |
 | `use-api-client` | Use `api` client, not raw `fetch('/api/...')` | WARNING |
 | `use-nav-helpers` | Use `nav` helpers, not hardcoded paths | WARNING |
+| `no-hardcoded-values` | No hardcoded URLs/IPs/secrets (with exceptions) | WARNING |
 | `missing-readme` | Feature folders must have README.md | WARNING |
+| `readme-missing-section` | Feature READMEs need required sections | WARNING |
 
 **Self-validation before finalizing code:**
 ```
+ARCHITECTURE (ERROR - must fix):
 □ Would this pass npm run check:standards?
 □ Are there any layer violations?
 □ Are there any cross-feature imports?
-□ Are all URLs in the allowed list or config?
+□ Does client component have 'use client' directive?
+
+CODE QUALITY (WARNING - should fix):
 □ Are all types properly defined (no any)?
-□ Are nav helpers used for all internal links?
+□ Using async/await (not .then() chains)?
+□ No console.log statements?
+□ Using ES imports (not require())?
+□ Using api client (not raw fetch)?
+□ Using nav helpers (not hardcoded paths)?
+□ Are all URLs in the allowed list or config?
 ```
 
 ### When User Requests Violating Code
@@ -308,6 +332,10 @@ After generating:
 | Hardcoded paths | Use `nav` helpers |
 | UI with DB calls | Use service layer |
 | `any` type | Define proper types |
+| `.then()` chains | Use `async/await` |
+| `console.log` | Use error handling or remove |
+| `require()` | Use ES `import` |
+| Hooks without `'use client'` | Add directive at top |
 | **Feature imports feature** | Extract to `app/components/` or `lib/` |
 | **API imports API** | Extract to `lib/services/` |
 
@@ -359,11 +387,19 @@ Get key at: https://aistudio.google.com/apikey
 
 **Pre-generation checklist:**
 ```
+ARCHITECTURE (ERROR):
 □ Feature: _____________ Layer: [ ]interface [ ]logic [ ]data
 □ Cross-feature import? → STOP
 □ Cross-API import? → STOP  
 □ UI importing db? → STOP
 □ File name generic? → Rename
+□ Client component without 'use client'? → Add directive
+
+CODE QUALITY (WARNING):
+□ Using any type? → Define proper interface
+□ Using .then()? → Convert to async/await
+□ Using console.log? → Remove or use logger
+□ Using require()? → Convert to ES import
 ```
 
 **Import rules:**

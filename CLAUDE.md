@@ -17,14 +17,21 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ### AI Must REFUSE To Generate Code That:
 
+**Architecture Violations (ERROR - blocks push):**
 - ❌ Imports from one feature into another (e.g., `professionals/` → `photos/`)
 - ❌ Imports from one API route into another (e.g., `api/professionals/` → `api/photos/`)
 - ❌ Imports `lib/db` directly in UI components or pages
 - ❌ Uses generic file names (`utils.ts`, `helpers.ts`, `misc.ts`)
-- ❌ Contains hardcoded URLs, IPs, or secrets (except allowed: schema.org, unsplash, xmlns, w3.org)
+- ❌ Uses React hooks without `'use client'` directive
+
+**Code Quality Violations (WARNING - should fix):**
 - ❌ Uses `any` type or `@ts-ignore` or `@ts-nocheck`
+- ❌ Uses `.then()` promise chains instead of `async/await`
+- ❌ Contains `console.log` statements (use proper error handling)
+- ❌ Uses CommonJS `require()` instead of ES imports
 - ❌ Uses raw `fetch()` for internal API calls (use `api` client)
 - ❌ Uses hardcoded route paths (use `nav` helpers)
+- ❌ Contains hardcoded URLs, IPs, or secrets (except allowed: schema.org, unsplash, xmlns, w3.org, localhost, example.com)
 
 ### Automated Standards Enforcement
 
@@ -38,20 +45,33 @@ This script enforces:
 | `layer-violation` | `app/` cannot import from `lib/db` directly | ERROR |
 | `no-cross-feature-imports` | Features cannot import from other features | ERROR |
 | `no-cross-api-imports` | API routes cannot import from other API routes | ERROR |
-| `no-hardcoded-values` | No hardcoded URLs/IPs/secrets (with exceptions) | WARNING |
+| `missing-use-client` | Components using hooks need `'use client'` | ERROR |
 | `type-safety` | No `any`, `@ts-ignore`, `@ts-nocheck` | WARNING |
+| `use-async-await` | Use `async/await` not `.then()` chains | WARNING |
+| `no-console-log` | Remove `console.log` from production code | WARNING |
+| `no-require-imports` | Use ES imports, not CommonJS `require()` | WARNING |
 | `use-api-client` | Use `api` client, not raw `fetch('/api/...')` | WARNING |
 | `use-nav-helpers` | Use `nav` helpers, not hardcoded paths | WARNING |
+| `no-hardcoded-values` | No hardcoded URLs/IPs/secrets (with exceptions) | WARNING |
 | `missing-readme` | Feature folders must have README.md | WARNING |
+| `readme-missing-section` | Feature READMEs need required sections | WARNING |
 
 **Before finalizing any code generation:**
 ```
+ARCHITECTURE (ERROR - must fix):
 □ Would this pass npm run check:standards?
 □ Are there any layer violations?
 □ Are there any cross-feature imports?
-□ Are all URLs in the allowed list or config?
+□ Does client component have 'use client' directive?
+
+CODE QUALITY (WARNING - should fix):
 □ Are all types properly defined (no any)?
-□ Are nav helpers used for all internal links?
+□ Using async/await (not .then() chains)?
+□ No console.log statements?
+□ Using ES imports (not require())?
+□ Using api client (not raw fetch)?
+□ Using nav helpers (not hardcoded paths)?
+□ Are all URLs in the allowed list or config?
 ```
 
 ### AI Must ALWAYS:

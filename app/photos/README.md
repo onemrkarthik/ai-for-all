@@ -2,11 +2,35 @@
 
 This directory contains the main photo gallery pages with React Server Components streaming architecture.
 
+## Responsibilities
+
+- Display photo galleries with progressive server-side streaming
+- Handle topic-based photo organization and URL routing
+- Provide filtering by style, color, and layout
+- Support pagination for large photo collections
+- Enable photo modal/lightbox functionality
+- Generate SEO-optimized metadata and JSON-LD structured data
+
+**Does NOT handle:**
+- Photo upload or editing (admin functionality)
+- Direct database access (uses service layer)
+- Professional profiles (see `/professionals`)
+
 ## Routes
 
 | Route | File | Description |
 |-------|------|-------------|
 | `/photos/[slug]` | `[slug]/page.tsx` | Topic-based photo gallery |
+
+## Key Components
+
+| Component | Purpose |
+|-----------|---------|
+| `[slug]/page.tsx` | Main topic photos page with streaming batches |
+| `PhotoBatch` | Server component that fetches and renders a batch of photos |
+| `PhotoBatchClient` | Client component for photo rendering and gallery registration |
+| `FilteredGallery` | Wrapper providing filter controls |
+| `Pagination` | Page navigation controls |
 
 ## Topic Photos Page (`[slug]/page.tsx`)
 

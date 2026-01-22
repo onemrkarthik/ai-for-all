@@ -213,6 +213,19 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
     const [resumingConversationId, setResumingConversationId] = useState<number | null>(null);
 
     /**
+     * Load conversation data for a professional (non-blocking)
+     * Runs in parallel with photo details fetch to avoid waterfall
+     */
+    const loadConversation = async (professionalId: number) => {
+        try {
+            const conversationData = await api.contact.latest(professionalId);
+            setResumeConversation(conversationData.conversation);
+        } catch (err) {
+            console.error("Failed to load conversation:", err);
+        }
+    };
+
+    /**
      * Effect: Reset and fetch photo details when photo changes
      *
      * Behavior:
@@ -256,9 +269,7 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
                 // Fetch conversation in parallel - doesn't block photo details display
                 // This eliminates the API waterfall pattern
                 if (photoDetails.professional?.id) {
-                    api.contact.latest(photoDetails.professional.id)
-                        .then(conversationData => setResumeConversation(conversationData.conversation))
-                        .catch(err => console.error("Failed to load conversation:", err));
+                    loadConversation(photoDetails.professional.id);
                 }
             } catch (error) {
                 console.error("Failed to load photo details", error);

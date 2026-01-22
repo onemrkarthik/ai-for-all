@@ -25,7 +25,9 @@
       "Bash(xargs kill:*)",
       "Bash(grep:*)",
       "Bash(npm run lint:*)",
-      "Bash(git push)"
+      "Bash(git push)",
+      "Bash(npm test)",
+      "Bash(npm run check:standards:*)"
     ]
   }
 }
