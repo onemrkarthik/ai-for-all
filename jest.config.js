@@ -5,26 +5,15 @@ const tsJestTransformCfg = createDefaultPreset().transform;
 
 /** @type {import("jest").Config} **/
 module.exports = {
-  // Use jsdom for React component tests
-  testEnvironment: "jsdom",
-  
+  // Common transform configuration
   transform: {
     ...tsJestTransformCfg,
   },
-  
-  // Setup files after environment
-  setupFilesAfterEnv: ["<rootDir>/tests/setup.tsx"],
   
   // Module path aliases (match tsconfig.json)
   moduleNameMapper: {
     "^@/(.*)$": "<rootDir>/$1",
   },
-  
-  // Test file patterns
-  testMatch: [
-    "<rootDir>/tests/**/*.test.ts",
-    "<rootDir>/tests/**/*.test.tsx",
-  ],
   
   // Coverage configuration
   collectCoverageFrom: [
@@ -44,4 +33,53 @@ module.exports = {
       statements: 0,
     },
   },
+
+  // Use projects to handle different test environments
+  projects: [
+    // Unit tests for API routes and services (Node.js environment)
+    {
+      displayName: "unit",
+      testEnvironment: "node",
+      transform: {
+        ...tsJestTransformCfg,
+      },
+      moduleNameMapper: {
+        "^@/(.*)$": "<rootDir>/$1",
+      },
+      testMatch: [
+        "<rootDir>/tests/lib/**/*.test.ts",
+        "<rootDir>/tests/app/api/**/*.test.ts",
+      ],
+      setupFilesAfterEnv: ["<rootDir>/tests/setup.ts"],
+    },
+    // Component tests (jsdom environment)
+    {
+      displayName: "component",
+      testEnvironment: "jsdom",
+      transform: {
+        ...tsJestTransformCfg,
+      },
+      moduleNameMapper: {
+        "^@/(.*)$": "<rootDir>/$1",
+      },
+      testMatch: [
+        "<rootDir>/tests/app/components/**/*.test.tsx",
+      ],
+      setupFilesAfterEnv: ["<rootDir>/tests/setup.tsx"],
+    },
+    // Architecture tests (Node.js environment)
+    {
+      displayName: "architecture",
+      testEnvironment: "node",
+      transform: {
+        ...tsJestTransformCfg,
+      },
+      moduleNameMapper: {
+        "^@/(.*)$": "<rootDir>/$1",
+      },
+      testMatch: [
+        "<rootDir>/tests/architecture.test.ts",
+      ],
+    },
+  ],
 };
