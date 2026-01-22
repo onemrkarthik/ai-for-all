@@ -28,3 +28,6 @@ jest.mock('next/link', () => ({
 
 // Mock environment variables
 process.env.NEXT_PUBLIC_CDN_URL = '';
+
+// Mock scrollIntoView for ContactPane and other components
+Element.prototype.scrollIntoView = jest.fn();
