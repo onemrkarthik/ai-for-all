@@ -17,7 +17,8 @@
     "postinstall": "bash scripts/install-hooks.sh && (test -f local.db || npm run db:init)",
     "prepare": "husky",
     "type-check": "tsc --noEmit",
-    "test": "jest"
+    "test": "jest",
+    "test:coverage": "jest --coverage"
   },
   "lint-staged": {
     "*.{js,jsx,ts,tsx}": [
