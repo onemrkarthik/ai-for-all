@@ -33,6 +33,61 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ Propose the correct location before writing code
 - ✅ Use existing patterns from the codebase
 - ✅ Generate types for all data structures
+- ✅ **Keep documentation and tests in sync with code changes** (see below)
+
+### Documentation & Test Sync Rule (CRITICAL)
+
+**Every code change must include updates to related documentation and tests.**
+
+When making code changes, Claude must:
+
+1. **Update Documentation** — If the change affects:
+   - Project structure → Update `README.md` and `ARCHITECTURE.md`
+   - API routes → Update `lib/api/config.ts` and route README files
+   - Navigation → Update `lib/navigation/routes.ts`
+   - Database schema → Update `lib/db/schema.ts` comments and `ARCHITECTURE.md`
+   - New features → Add feature README in the feature folder
+   - Commands/scripts → Update `README.md` Commands section
+
+2. **Update Tests** — If the change affects:
+   - Architecture (new folders, imports) → Update `tests/architecture.test.ts`
+   - New components → Consider adding component tests
+   - New services → Consider adding service tests
+
+3. **Update Type Definitions** — If the change affects:
+   - API responses → Update `lib/api/types.ts`
+   - Database queries → Update `lib/db/types.ts`
+   - Shared interfaces → Update relevant type files
+
+4. **Update References** — If renaming or moving files:
+   - Find all imports using the old path
+   - Update all references to the new path
+   - Update documentation mentioning the old path
+
+**Checklist after every code change:**
+```
+□ Does README.md need updating?
+□ Does ARCHITECTURE.md need updating?
+□ Do any tests need updating?
+□ Do any type definitions need updating?
+□ Are there stale references to update?
+```
+
+**Example:**
+```
+User: "Add a new /api/bookings endpoint"
+
+Claude: 
+1. Create app/api/bookings/route.ts
+2. Add route to lib/api/config.ts
+3. Add types to lib/api/types.ts
+4. Add api.bookings methods to lib/api/client.ts
+5. Update README.md project structure
+6. Update ARCHITECTURE.md file structure
+7. Create app/api/bookings/README.md
+```
+
+---
 
 ### When User Requests Violating Code
 
@@ -358,4 +413,13 @@ API client code      →  lib/api/
 Type definitions     →  lib/types/ or feature/types.ts
 Utilities            →  lib/[specificName].ts
 Constants            →  lib/constants/
+```
+
+**Post-Change Documentation Sync:**
+```
+□ README.md updated?
+□ ARCHITECTURE.md updated?
+□ API config/types updated?
+□ Tests updated?
+□ Stale references fixed?
 ```

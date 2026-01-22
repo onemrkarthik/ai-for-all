@@ -57,6 +57,51 @@ Should I proceed?"
 - ✅ Use `api` client for internal API calls
 - ✅ Use `nav` helpers for routing
 - ✅ Extract shared code proactively
+- ✅ **Keep documentation and tests in sync** (see below)
+
+---
+
+## Documentation & Test Sync Rule (CRITICAL)
+
+**Every code change must include updates to related documentation and tests.**
+
+### After Every Code Change, Check:
+
+```
+□ README.md — Project structure, commands, features
+□ ARCHITECTURE.md — File structure, architecture diagrams
+□ lib/api/config.ts — New API routes
+□ lib/api/types.ts — New request/response types
+□ lib/navigation/routes.ts — New navigation paths
+□ tests/architecture.test.ts — New folders, import patterns
+□ Feature README files — Feature-specific documentation
+```
+
+### What to Update When:
+
+| Change Type | Update These |
+|-------------|--------------|
+| New API route | `lib/api/config.ts`, `lib/api/types.ts`, `lib/api/client.ts`, `README.md` |
+| New feature folder | `README.md`, `ARCHITECTURE.md`, `tests/architecture.test.ts` |
+| New component | `README.md` project structure |
+| Rename/move file | All imports, all documentation references |
+| New command/script | `README.md` Commands section, `package.json` |
+| Schema change | `lib/db/schema.ts`, `ARCHITECTURE.md` |
+
+### Example Workflow:
+
+```
+User: "Add a /api/payments endpoint"
+
+AI Response:
+1. ✅ Create app/api/payments/route.ts
+2. ✅ Add to lib/api/config.ts
+3. ✅ Add types to lib/api/types.ts  
+4. ✅ Add api.payments to lib/api/client.ts
+5. ✅ Update README.md project structure
+6. ✅ Update ARCHITECTURE.md file structure
+7. ✅ Create app/api/payments/README.md
+```
 
 ---
 
@@ -316,4 +361,13 @@ Instead, I'll:
 2. [COMPLIANT STEP 2]
 
 Should I proceed?"
+```
+
+**Post-Change Documentation Sync:**
+```
+□ README.md updated?
+□ ARCHITECTURE.md updated?
+□ API config/types updated?
+□ Tests updated?
+□ Stale references fixed?
 ```
