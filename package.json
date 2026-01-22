@@ -9,6 +9,7 @@
     "start": "next start",
     "lint": "eslint",
     "check:no-houzz": "tsx scripts/check-no-houzz-code.ts",
+    "check:standards": "tsx scripts/check-standards.ts",
     "db:init": "tsx scripts/init-db.ts",
     "db:reset": "rm -f local.db local.db-wal local.db-shm && tsx scripts/init-db.ts",
     "hooks:install": "bash scripts/install-hooks.sh",
