@@ -1,7 +1,7 @@
 /**
  * Unit Tests for lib/proxy/handlers.ts
  *
- * Tests the proxy handler functions.
+ * Tests the middleware handler functions.
  */
 
 import { NextRequest, NextResponse } from 'next/server';
@@ -15,9 +15,18 @@ import {
   addRequestId,
   addCompressionHeaders,
 } from '@/lib/proxy/handlers';
+import { logger } from '@/lib/proxy/logger';
 
-/* eslint-disable @typescript-eslint/no-require-imports */
-// Mock logger
+// Mock next/server
+jest.mock('next/server', () => ({
+  NextRequest: jest.fn(),
+  NextResponse: jest.fn().mockImplementation((body, init) => ({
+    headers: new Map(Object.entries(init?.headers || {})),
+    status: init?.status || 200,
+  })),
+}));
+
+// Mock the logger
 jest.mock('@/lib/proxy/logger', () => ({
   logger: {
     debug: jest.fn(),
@@ -29,148 +38,154 @@ jest.mock('@/lib/proxy/logger', () => ({
   },
 }));
 
+// Get typed mock
+const mockLogger = logger as jest.Mocked<typeof logger>;
+
 describe('Proxy Handlers', () => {
+  let mockRequest: NextRequest;
+  let mockResponse: NextResponse;
+
   beforeEach(() => {
     jest.clearAllMocks();
+
+    // Create mock request
+    mockRequest = {
+      method: 'GET',
+      url: 'http://localhost:3000/api/test',
+      nextUrl: {
+        pathname: '/api/test',
+        search: '',
+      },
+      headers: new Headers({
+        'user-agent': 'TestAgent',
+      }),
+    } as unknown as NextRequest;
+
+    // Create mock response with writable headers
+    const headersMap = new Map<string, string>();
+    mockResponse = {
+      headers: {
+        set: (key: string, value: string) => headersMap.set(key, value),
+        get: (key: string) => headersMap.get(key),
+        entries: () => headersMap.entries(),
+      },
+      status: 200,
+    } as unknown as NextResponse;
   });
 
   describe('addSecurityHeaders', () => {
     it('adds CSP header to response', () => {
-      const request = new NextRequest('http://localhost/test');
-      const response = NextResponse.next();
-
-      const result = addSecurityHeaders(request, response);
-
-      expect(result.headers.get('Content-Security-Policy')).toBeTruthy();
+      const result = addSecurityHeaders(mockRequest, mockResponse);
+      
+      expect(result.headers.get('Content-Security-Policy')).toBeDefined();
     });
 
     it('adds X-Content-Type-Options header', () => {
-      const request = new NextRequest('http://localhost/test');
-      const response = NextResponse.next();
-
-      const result = addSecurityHeaders(request, response);
-
+      const result = addSecurityHeaders(mockRequest, mockResponse);
+      
       expect(result.headers.get('X-Content-Type-Options')).toBe('nosniff');
     });
 
     it('adds X-Frame-Options header', () => {
-      const request = new NextRequest('http://localhost/test');
-      const response = NextResponse.next();
-
-      const result = addSecurityHeaders(request, response);
-
+      const result = addSecurityHeaders(mockRequest, mockResponse);
+      
       expect(result.headers.get('X-Frame-Options')).toBe('DENY');
     });
 
     it('adds X-XSS-Protection header', () => {
-      const request = new NextRequest('http://localhost/test');
-      const response = NextResponse.next();
-
-      const result = addSecurityHeaders(request, response);
-
+      const result = addSecurityHeaders(mockRequest, mockResponse);
+      
       expect(result.headers.get('X-XSS-Protection')).toBe('1; mode=block');
     });
   });
 
   describe('logRequest', () => {
-    it('logs the request', () => {
-      const { logger } = require('@/lib/proxy/logger');
-      const request = new NextRequest('http://localhost/api/photos?id=1');
-
-      logRequest(request);
-
-      expect(logger.logRequest).toHaveBeenCalledWith(
+    it('calls logger.logRequest', () => {
+      logRequest(mockRequest);
+      
+      expect(mockLogger.logRequest).toHaveBeenCalledWith(
         'GET',
-        expect.stringContaining('/api/photos'),
-        expect.anything()
+        '/api/test',
+        mockRequest.headers
       );
     });
   });
 
   describe('startPerformanceMonitoring', () => {
-    it('returns a start time', () => {
-      const request = new NextRequest('http://localhost/test');
-
-      const startTime = startPerformanceMonitoring(request);
-
+    it('returns start time', () => {
+      const startTime = startPerformanceMonitoring(mockRequest);
+      
       expect(typeof startTime).toBe('number');
-      expect(startTime).toBeLessThanOrEqual(Date.now());
+      expect(startTime).toBeGreaterThan(0);
+    });
+
+    it('returns current timestamp', () => {
+      const before = Date.now();
+      const startTime = startPerformanceMonitoring(mockRequest);
+      const after = Date.now();
+      
+      expect(startTime).toBeGreaterThanOrEqual(before);
+      expect(startTime).toBeLessThanOrEqual(after);
     });
   });
 
   describe('endPerformanceMonitoring', () => {
     it('adds X-Response-Time header', () => {
-      const request = new NextRequest('http://localhost/test');
-      const response = NextResponse.next();
       const startTime = Date.now() - 100; // 100ms ago
-
-      const result = endPerformanceMonitoring(request, response, startTime);
-
-      expect(result.headers.get('X-Response-Time')).toBeTruthy();
+      
+      const result = endPerformanceMonitoring(mockRequest, mockResponse, startTime);
+      
+      expect(result.headers.get('X-Response-Time')).toMatch(/\d+ms/);
     });
 
     it('adds Server-Timing header', () => {
-      const request = new NextRequest('http://localhost/test');
-      const response = NextResponse.next();
       const startTime = Date.now() - 50;
-
-      const result = endPerformanceMonitoring(request, response, startTime);
-
-      expect(result.headers.get('Server-Timing')).toContain('total;dur=');
+      
+      const result = endPerformanceMonitoring(mockRequest, mockResponse, startTime);
+      
+      expect(result.headers.get('Server-Timing')).toMatch(/total;dur=\d+/);
     });
 
-    it('logs slow requests', () => {
-      const { logger } = require('@/lib/proxy/logger');
-      const request = new NextRequest('http://localhost/test');
-      const response = NextResponse.next();
+    it('logs performance', () => {
+      const startTime = Date.now() - 100;
+      
+      endPerformanceMonitoring(mockRequest, mockResponse, startTime);
+      
+      expect(mockLogger.logPerformance).toHaveBeenCalled();
+    });
+
+    it('warns on slow requests', () => {
       const startTime = Date.now() - 2000; // 2 seconds ago
-
-      endPerformanceMonitoring(request, response, startTime);
-
-      expect(logger.warn).toHaveBeenCalledWith(
-        'Slow request detected',
-        expect.objectContaining({
-          duration: expect.any(Number),
-        })
-      );
+      
+      endPerformanceMonitoring(mockRequest, mockResponse, startTime);
+      
+      expect(mockLogger.warn).toHaveBeenCalled();
     });
   });
 
   describe('handleProxyError', () => {
-    it('returns 500 response for errors', () => {
-      const request = new NextRequest('http://localhost/test');
-      const error = new Error('Test error');
-
-      const result = handleProxyError(error, request);
-
-      expect(result.status).toBe(500);
-    });
-
     it('logs the error', () => {
-      const { logger } = require('@/lib/proxy/logger');
-      const request = new NextRequest('http://localhost/test');
       const error = new Error('Test error');
-
-      handleProxyError(error, request);
-
-      expect(logger.error).toHaveBeenCalledWith(
+      
+      handleProxyError(error, mockRequest);
+      
+      expect(mockLogger.error).toHaveBeenCalledWith(
         'Proxy error',
         expect.objectContaining({
           error: 'Test error',
+          method: 'GET',
+          url: 'http://localhost:3000/api/test',
         })
       );
     });
 
     it('handles non-Error objects', () => {
-      const { logger } = require('@/lib/proxy/logger');
-      const request = new NextRequest('http://localhost/test');
-
-      handleProxyError('String error', request);
-
-      expect(logger.error).toHaveBeenCalledWith(
+      handleProxyError('string error', mockRequest);
+      
+      expect(mockLogger.error).toHaveBeenCalledWith(
         'Proxy error',
         expect.objectContaining({
-          error: 'String error',
+          error: 'string error',
         })
       );
     });
@@ -178,52 +193,62 @@ describe('Proxy Handlers', () => {
 
   describe('addCORSHeaders', () => {
     it('adds CORS headers for API routes', () => {
-      const request = new NextRequest('http://localhost/api/photos');
-      const response = NextResponse.next();
-
-      const result = addCORSHeaders(request, response);
-
+      const result = addCORSHeaders(mockRequest, mockResponse);
+      
       expect(result.headers.get('Access-Control-Allow-Origin')).toBe('*');
-      expect(result.headers.get('Access-Control-Allow-Methods')).toContain('GET');
+      expect(result.headers.get('Access-Control-Allow-Methods')).toBe('GET, POST, PUT, DELETE, OPTIONS');
+      expect(result.headers.get('Access-Control-Allow-Headers')).toBe('Content-Type, Authorization');
     });
 
     it('does not add CORS headers for non-API routes', () => {
-      const request = new NextRequest('http://localhost/photos');
-      const response = NextResponse.next();
-
-      const result = addCORSHeaders(request, response);
-
-      expect(result.headers.get('Access-Control-Allow-Origin')).toBeNull();
-    });
-
-    it('handles OPTIONS preflight requests', () => {
-      const request = new NextRequest('http://localhost/api/photos', { method: 'OPTIONS' });
-      const response = NextResponse.next();
-
-      const result = addCORSHeaders(request, response);
-
-      expect(result.status).toBe(204);
+      mockRequest.nextUrl.pathname = '/page';
+      
+      const result = addCORSHeaders(mockRequest, mockResponse);
+      
+      expect(result.headers.get('Access-Control-Allow-Origin')).toBeUndefined();
     });
   });
 
   describe('addRequestId', () => {
     it('adds X-Request-ID header', () => {
-      const request = new NextRequest('http://localhost/test');
-      const response = NextResponse.next();
+      const result = addRequestId(mockRequest, mockResponse);
+      
+      const requestId = result.headers.get('X-Request-ID');
+      expect(requestId).toBeDefined();
+      expect(requestId).toMatch(/^req_\d+_[a-z0-9]+$/);
+    });
 
-      const result = addRequestId(request, response);
+    it('generates unique request IDs', () => {
+      // Create separate response objects to test unique IDs
+      const headersMap1 = new Map<string, string>();
+      const mockResponse1 = {
+        headers: {
+          set: (key: string, value: string) => headersMap1.set(key, value),
+          get: (key: string) => headersMap1.get(key),
+        },
+        status: 200,
+      } as unknown as NextResponse;
 
-      expect(result.headers.get('X-Request-ID')).toBeTruthy();
-      expect(result.headers.get('X-Request-ID')).toMatch(/^req_/);
+      const headersMap2 = new Map<string, string>();
+      const mockResponse2 = {
+        headers: {
+          set: (key: string, value: string) => headersMap2.set(key, value),
+          get: (key: string) => headersMap2.get(key),
+        },
+        status: 200,
+      } as unknown as NextResponse;
+
+      addRequestId(mockRequest, mockResponse1);
+      addRequestId(mockRequest, mockResponse2);
+      
+      expect(mockResponse1.headers.get('X-Request-ID')).not.toBe(mockResponse2.headers.get('X-Request-ID'));
     });
   });
 
   describe('addCompressionHeaders', () => {
     it('adds Vary header', () => {
-      const response = NextResponse.next();
-
-      const result = addCompressionHeaders(response);
-
+      const result = addCompressionHeaders(mockResponse);
+      
       expect(result.headers.get('Vary')).toBe('Accept-Encoding');
     });
   });

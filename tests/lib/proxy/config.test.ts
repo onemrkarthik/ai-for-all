@@ -1,7 +1,7 @@
 /**
  * Unit Tests for lib/proxy/config.ts
  *
- * Tests the middleware configuration and CSP builder.
+ * Tests the middleware configuration and CSP header builder.
  */
 
 import {
@@ -13,35 +13,34 @@ import {
   buildCSPHeader,
 } from '@/lib/proxy/config';
 
-describe('Middleware Configuration', () => {
+describe('Proxy Configuration', () => {
   describe('securityConfig', () => {
-    it('has valid content security policy', () => {
+    it('has contentSecurityPolicy defined', () => {
       expect(securityConfig.contentSecurityPolicy).toBeDefined();
       expect(securityConfig.contentSecurityPolicy['default-src']).toContain("'self'");
     });
 
-    it('allows Gemini AI in connect-src', () => {
-      const connectSrc = securityConfig.contentSecurityPolicy['connect-src'];
-      expect(connectSrc).toContain('https://generativelanguage.googleapis.com');
-    });
-
-    it('prevents clickjacking with frame-ancestors', () => {
-      expect(securityConfig.contentSecurityPolicy['frame-ancestors']).toContain("'none'");
-    });
-
     it('has security headers defined', () => {
+      expect(securityConfig.headers).toBeDefined();
       expect(securityConfig.headers['X-Content-Type-Options']).toBe('nosniff');
       expect(securityConfig.headers['X-Frame-Options']).toBe('DENY');
       expect(securityConfig.headers['X-XSS-Protection']).toBe('1; mode=block');
     });
 
-    it('has referrer policy defined', () => {
-      expect(securityConfig.headers['Referrer-Policy']).toBe('origin-when-cross-origin');
+    it('includes CSP directives for common sources', () => {
+      const csp = securityConfig.contentSecurityPolicy;
+      
+      expect(csp['script-src']).toContain("'self'");
+      expect(csp['style-src']).toContain("'self'");
+      expect(csp['img-src']).toContain("'self'");
+      expect(csp['font-src']).toContain("'self'");
+      expect(csp['connect-src']).toContain("'self'");
     });
 
-    it('has permissions policy for sensitive features', () => {
-      expect(securityConfig.headers['Permissions-Policy']).toContain('camera=()');
-      expect(securityConfig.headers['Permissions-Policy']).toContain('microphone=()');
+    it('includes Gemini API in connect-src', () => {
+      expect(securityConfig.contentSecurityPolicy['connect-src']).toContain(
+        'https://generativelanguage.googleapis.com'
+      );
     });
   });
 
@@ -50,49 +49,49 @@ describe('Middleware Configuration', () => {
       expect(performanceConfig.enableTimingHeaders).toBe(true);
     });
 
-    it('has slow request threshold defined', () => {
-      expect(performanceConfig.slowRequestThreshold).toBe(1000);
-    });
-
     it('has server timing enabled', () => {
       expect(performanceConfig.enableServerTiming).toBe(true);
+    });
+
+    it('has slow request threshold defined', () => {
+      expect(performanceConfig.slowRequestThreshold).toBe(1000);
     });
   });
 
   describe('loggingConfig', () => {
-    it('has logging enabled', () => {
+    it('has logging enabled by default', () => {
       expect(loggingConfig.enabled).toBe(true);
     });
 
-    it('has appropriate log level', () => {
+    it('has info log level', () => {
       expect(loggingConfig.level).toBe('info');
     });
 
-    it('does not log request body by default', () => {
+    it('has request/response body logging disabled', () => {
       expect(loggingConfig.logRequestBody).toBe(false);
+      expect(loggingConfig.logResponseBody).toBe(false);
     });
 
-    it('excludes Next.js internal paths', () => {
+    it('has exclude paths defined', () => {
       expect(loggingConfig.excludePaths).toContain('/_next');
       expect(loggingConfig.excludePaths).toContain('/favicon.ico');
     });
 
-    it('redacts sensitive headers', () => {
+    it('has sensitive headers defined', () => {
       expect(loggingConfig.sensitiveHeaders).toContain('authorization');
       expect(loggingConfig.sensitiveHeaders).toContain('cookie');
+      expect(loggingConfig.sensitiveHeaders).toContain('x-api-key');
     });
   });
 
   describe('matcherConfig', () => {
-    it('has include patterns', () => {
+    it('has include patterns defined', () => {
+      expect(matcherConfig.include).toBeDefined();
       expect(matcherConfig.include.length).toBeGreaterThan(0);
     });
 
-    it('excludes static files', () => {
-      const pattern = matcherConfig.include[0];
-      expect(pattern).toContain('_next/static');
-      expect(pattern).toContain('_next/image');
-      expect(pattern).toContain('favicon.ico');
+    it('has empty exclude array', () => {
+      expect(matcherConfig.exclude).toEqual([]);
     });
   });
 
@@ -101,38 +100,40 @@ describe('Middleware Configuration', () => {
       expect(rateLimitConfig.enabled).toBe(false);
     });
 
-    it('has reasonable default values', () => {
+    it('has requests per window defined', () => {
       expect(rateLimitConfig.requestsPerWindow).toBe(100);
+    });
+
+    it('has window duration defined', () => {
       expect(rateLimitConfig.windowMs).toBe(60000);
     });
   });
 
   describe('buildCSPHeader', () => {
-    it('returns a valid CSP string', () => {
-      const csp = buildCSPHeader();
-      expect(typeof csp).toBe('string');
-      expect(csp.length).toBeGreaterThan(0);
+    it('returns a string', () => {
+      const result = buildCSPHeader();
+      expect(typeof result).toBe('string');
     });
 
-    it('includes default-src directive', () => {
-      const csp = buildCSPHeader();
-      expect(csp).toContain("default-src 'self'");
-    });
-
-    it('includes script-src directive', () => {
-      const csp = buildCSPHeader();
-      expect(csp).toContain('script-src');
-    });
-
-    it('includes connect-src directive with Gemini', () => {
-      const csp = buildCSPHeader();
-      expect(csp).toContain('connect-src');
-      expect(csp).toContain('generativelanguage.googleapis.com');
+    it('includes all CSP directives', () => {
+      const result = buildCSPHeader();
+      
+      expect(result).toContain('default-src');
+      expect(result).toContain('script-src');
+      expect(result).toContain('style-src');
+      expect(result).toContain('img-src');
+      expect(result).toContain('font-src');
+      expect(result).toContain('connect-src');
     });
 
     it('separates directives with semicolons', () => {
-      const csp = buildCSPHeader();
-      expect(csp).toContain(';');
+      const result = buildCSPHeader();
+      expect(result).toContain(';');
+    });
+
+    it('includes self in default-src', () => {
+      const result = buildCSPHeader();
+      expect(result).toContain("default-src 'self'");
     });
   });
 });

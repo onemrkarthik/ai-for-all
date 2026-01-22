@@ -1,32 +1,34 @@
 /**
  * Unit Tests for lib/proxy/logger.ts
  *
- * Tests the middleware logger.
+ * Tests the middleware logger functionality.
  */
 
 import { logger, LogLevel } from '@/lib/proxy/logger';
 
-describe('Middleware Logger', () => {
-  const originalConsole = {
-    log: console.log,
-    warn: console.warn,
-    error: console.error,
+describe('Proxy Logger', () => {
+  let consoleSpy: {
+    debug: jest.SpyInstance;
+    log: jest.SpyInstance;
+    warn: jest.SpyInstance;
+    error: jest.SpyInstance;
   };
 
   beforeEach(() => {
-    console.log = jest.fn();
-    console.warn = jest.fn();
-    console.error = jest.fn();
+    consoleSpy = {
+      debug: jest.spyOn(console, 'debug').mockImplementation(),
+      log: jest.spyOn(console, 'log').mockImplementation(),
+      warn: jest.spyOn(console, 'warn').mockImplementation(),
+      error: jest.spyOn(console, 'error').mockImplementation(),
+    };
   });
 
   afterEach(() => {
-    console.log = originalConsole.log;
-    console.warn = originalConsole.warn;
-    console.error = originalConsole.error;
+    jest.restoreAllMocks();
   });
 
   describe('LogLevel enum', () => {
-    it('has correct values', () => {
+    it('has all log levels defined', () => {
       expect(LogLevel.DEBUG).toBe('debug');
       expect(LogLevel.INFO).toBe('info');
       expect(LogLevel.WARN).toBe('warn');
@@ -34,87 +36,123 @@ describe('Middleware Logger', () => {
     });
   });
 
+  describe('logger.debug', () => {
+    it('logs debug messages', () => {
+      logger.debug('Test debug message');
+      expect(consoleSpy.debug).toHaveBeenCalled();
+    });
+
+    it('includes data in debug logs', () => {
+      logger.debug('Test debug', { key: 'value' });
+      expect(consoleSpy.debug).toHaveBeenCalled();
+    });
+  });
+
   describe('logger.info', () => {
     it('logs info messages', () => {
       logger.info('Test info message');
-
-      expect(console.log).toHaveBeenCalled();
+      expect(consoleSpy.log).toHaveBeenCalled();
     });
 
-    it('logs info messages with data', () => {
-      logger.info('Test message', { key: 'value' });
-
-      expect(console.log).toHaveBeenCalled();
+    it('includes data in info logs', () => {
+      logger.info('Test info', { key: 'value' });
+      expect(consoleSpy.log).toHaveBeenCalled();
     });
   });
 
   describe('logger.warn', () => {
     it('logs warning messages', () => {
-      logger.warn('Test warning');
-
-      expect(console.warn).toHaveBeenCalled();
+      logger.warn('Test warning message');
+      expect(consoleSpy.warn).toHaveBeenCalled();
     });
 
-    it('logs warning messages with data', () => {
-      logger.warn('Test warning', { issue: 'something' });
-
-      expect(console.warn).toHaveBeenCalled();
+    it('includes data in warning logs', () => {
+      logger.warn('Test warning', { key: 'value' });
+      expect(consoleSpy.warn).toHaveBeenCalled();
     });
   });
 
   describe('logger.error', () => {
     it('logs error messages', () => {
-      logger.error('Test error');
-
-      expect(console.error).toHaveBeenCalled();
+      logger.error('Test error message');
+      expect(consoleSpy.error).toHaveBeenCalled();
     });
 
-    it('logs error messages with data', () => {
-      logger.error('Test error', { details: 'error details' });
-
-      expect(console.error).toHaveBeenCalled();
-    });
-  });
-
-  describe('logger.debug', () => {
-    it('logs debug messages', () => {
-      logger.debug('Test debug');
-
-      // Debug may or may not log depending on log level config
-      // Just ensure it doesn't throw
-      expect(() => logger.debug('Test')).not.toThrow();
+    it('includes data in error logs', () => {
+      logger.error('Test error', { key: 'value' });
+      expect(consoleSpy.error).toHaveBeenCalled();
     });
   });
 
   describe('logger.logRequest', () => {
-    it('logs request information', () => {
-      const headers = new Headers();
-      headers.set('user-agent', 'Test Agent');
-      headers.set('referer', 'http://example.com');
-
-      logger.logRequest('GET', '/api/photos', headers);
-
-      expect(console.log).toHaveBeenCalled();
+    it('logs requests with method and URL', () => {
+      logger.logRequest('GET', '/api/test');
+      expect(consoleSpy.log).toHaveBeenCalled();
     });
 
-    it('handles missing headers', () => {
-      const headers = new Headers();
+    it('logs requests with headers', () => {
+      const headers = new Headers({
+        'user-agent': 'TestAgent',
+        'referer': 'http://localhost',
+      });
+      logger.logRequest('POST', '/api/test', headers);
+      expect(consoleSpy.log).toHaveBeenCalled();
+    });
 
-      expect(() => logger.logRequest('GET', '/api/photos', headers)).not.toThrow();
+    it('excludes paths from logging config', () => {
+      logger.logRequest('GET', '/_next/static/chunk.js');
+      // Should not log excluded paths
+      expect(consoleSpy.log).not.toHaveBeenCalled();
+    });
+
+    it('excludes favicon from logging', () => {
+      logger.logRequest('GET', '/favicon.ico');
+      expect(consoleSpy.log).not.toHaveBeenCalled();
     });
   });
 
   describe('logger.logPerformance', () => {
-    it('logs performance information', () => {
-      logger.logPerformance('GET', '/api/photos', 150, 200);
-
-      expect(console.log).toHaveBeenCalled();
+    it('logs performance with duration', () => {
+      logger.logPerformance('GET', '/api/test', 150);
+      expect(consoleSpy.log).toHaveBeenCalled();
     });
 
-    it('logs performance without status', () => {
-      logger.logPerformance('POST', '/api/contact', 200);
+    it('logs performance with status code', () => {
+      logger.logPerformance('GET', '/api/test', 100, 200);
+      expect(consoleSpy.log).toHaveBeenCalled();
+    });
 
-      expect(console.log).toHaveBeenCalled();
+    it('logs warning for slow requests', () => {
+      logger.logPerformance('GET', '/api/slow', 1500);
+      expect(consoleSpy.warn).toHaveBeenCalled();
+    });
+
+    it('excludes paths from performance logging', () => {
+      logger.logPerformance('GET', '/_next/static/chunk.js', 100);
+      expect(consoleSpy.log).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('sensitive data redaction', () => {
+    it('redacts authorization header', () => {
+      logger.info('Test', { authorization: 'Bearer secret123' });
+      const logCall = consoleSpy.log.mock.calls[0][0];
+      expect(logCall).toContain('[REDACTED]');
+      expect(logCall).not.toContain('secret123');
+    });
+
+    it('redacts cookie header', () => {
+      logger.info('Test', { cookie: 'session=abc123' });
+      const logCall = consoleSpy.log.mock.calls[0][0];
+      expect(logCall).toContain('[REDACTED]');
+      expect(logCall).not.toContain('abc123');
+    });
+
+    it('redacts x-api-key header', () => {
+      logger.info('Test', { 'x-api-key': 'my-secret-key' });
+      const logCall = consoleSpy.log.mock.calls[0][0];
+      expect(logCall).toContain('[REDACTED]');
+      expect(logCall).not.toContain('my-secret-key');
     });
   });
 });
