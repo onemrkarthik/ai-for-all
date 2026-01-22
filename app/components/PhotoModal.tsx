@@ -24,6 +24,7 @@ import Link from 'next/link';
 import { Item } from '@/lib/data';
 import { marked } from 'marked';
 import { api } from '@/lib/api';
+import type { Conversation } from '@/lib/api/types';
 import { nav } from '@/lib/navigation';
 
 /**
@@ -208,7 +209,7 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
      * When true, shows ContactPane instead of photo details
      */
     const [showContact, setShowContact] = useState(false);
-    const [resumeConversation, setResumeConversation] = useState<any>(null);
+    const [resumeConversation, setResumeConversation] = useState<Conversation | null>(null);
     const [resumingConversationId, setResumingConversationId] = useState<number | null>(null);
 
     /**
@@ -298,10 +299,7 @@ export function PhotoModal({ photo, currentIndex, totalPhotos, onClose, onNext, 
 
     // Don't render modal if no photo is selected
     if (!photo || currentIndex === null) return null;
-    
-    // Debug logging
-    console.log('[PhotoModal] Rendering with photo:', { id: photo.id, image: photo.image, currentIndex });
-    
+
     /**
      * Get high-resolution version of the image URL for modal view.
      * For Unsplash images, we scale up proportionally to maintain the same aspect ratio.

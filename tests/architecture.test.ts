@@ -436,29 +436,38 @@ describe('Code Quality', () => {
   
   test('no console.log in production code', () => {
     const files = getAllFiles('app').concat(getAllFiles('lib'));
-    
+
     const violations: { file: string; line: number }[] = [];
-    
+
     for (const file of files) {
-      // Skip test files
-      if (file.includes('.test.') || file.includes('.spec.')) {
+      // Skip test files and logger utilities
+      if (file.includes('.test.') || file.includes('.spec.') || file.includes('logger.ts')) {
         continue;
       }
-      
+
       const content = getFileContent(file);
       const lines = content.split('\n');
-      
+
       lines.forEach((line, index) => {
+        const trimmedLine = line.trim();
+        // Skip comments (single-line, multi-line, and JSDoc)
+        if (
+          trimmedLine.startsWith('//') ||
+          trimmedLine.startsWith('*') ||
+          trimmedLine.startsWith('/*')
+        ) {
+          return;
+        }
         if (/console\.log\(/.test(line)) {
           violations.push({ file, line: index + 1 });
         }
       });
     }
-    
+
     if (violations.length > 0) {
       console.log('console.log found:', violations.slice(0, 10));
     }
-    
+
     // Warning level - some console.logs might be intentional
     expect(violations.length).toBeLessThan(5);
   });

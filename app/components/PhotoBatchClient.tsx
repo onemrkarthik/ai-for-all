@@ -84,7 +84,6 @@ export function PhotoBatchClient({ data, offset, limit, initialData, delay, show
      */
     useEffect(() => {
         const timer = setTimeout(() => {
-            console.log(`Registering batch offset=${offset} count=${data.length}`);
             registerPhotos(data, offset);
         }, 0);
         return () => clearTimeout(timer);
@@ -99,14 +98,6 @@ export function PhotoBatchClient({ data, offset, limit, initialData, delay, show
      */
     const handlePhotoClick = (photo: Item, localIndex: number) => {
         const globalIndex = offset + localIndex;
-        console.log('[PhotoBatchClient] Photo clicked:', { 
-            localIndex, 
-            globalIndex, 
-            offset,
-            photoId: photo.id,
-            photoTitle: photo.title,
-            photoImage: photo.image
-        });
         openPhoto(photo, globalIndex);
     };
 

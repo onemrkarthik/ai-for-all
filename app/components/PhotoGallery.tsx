@@ -104,17 +104,6 @@ export function PhotoGalleryProvider({ children }: { children: ReactNode }) {
         : null;
     const totalPhotos = photos.length;
 
-    // Debug logging
-    if (currentIndex !== null) {
-        console.log('[PhotoGallery] currentPhoto derivation:', {
-            currentIndex,
-            hasExplicitPhoto: !!explicitPhoto,
-            explicitPhotoId: explicitPhoto?.id,
-            arrayPhotoId: photos[currentIndex]?.id,
-            resultPhotoId: currentPhoto?.id
-        });
-    }
-
     // Effect to load more photos when viewing the last photo
     useEffect(() => {
         const checkAndLoadMore = async () => {
@@ -126,7 +115,6 @@ export function PhotoGalleryProvider({ children }: { children: ReactNode }) {
                 onLoadMoreRef.current &&
                 !loadingMoreRef.current
             ) {
-                console.log('[PhotoGallery] At last photo, loading more...');
                 loadingMoreRef.current = true;
                 setIsLoadingMore(true);
 
@@ -140,7 +128,6 @@ export function PhotoGalleryProvider({ children }: { children: ReactNode }) {
                                 const globalIndex = prevPhotos.length + idx;
                                 updatedPhotos[globalIndex] = photo;
                             });
-                            console.log(`[PhotoGallery] Loaded ${newPhotos.length} more photos. Total: ${updatedPhotos.length}`);
                             return updatedPhotos;
                         });
                         setHasLoadedMore(true);
@@ -177,7 +164,6 @@ export function PhotoGalleryProvider({ children }: { children: ReactNode }) {
             });
 
             if (hasChanges) {
-                console.log(`State updated: Added photos at offset ${startIndex}. Total: ${updatedPhotos.length}`);
                 return updatedPhotos;
             }
             return prevPhotos;
@@ -194,7 +180,6 @@ export function PhotoGalleryProvider({ children }: { children: ReactNode }) {
      * regardless of registration timing
      */
     const openPhoto = useCallback((photo: Item, index: number) => {
-        console.log('[PhotoGallery] openPhoto called with:', { photoId: photo.id, photoImage: photo.image, index });
         setExplicitPhoto(photo); // Store the explicit photo
         setCurrentIndex(index);
     }, []);

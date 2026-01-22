@@ -48,8 +48,6 @@ export function GalleryPageController({ currentPage, itemsPerPage, totalPages }:
             return [];
         }
 
-        console.log(`[GalleryPageController] Loading page ${pageToLoad}...`);
-
         try {
             const offset = (pageToLoad - 1) * itemsPerPage;
             const data = await api.feed.list({ offset, limit: itemsPerPage });
@@ -58,7 +56,6 @@ export function GalleryPageController({ currentPage, itemsPerPage, totalPages }:
             loadedPagesRef.current.push(pageToLoad);
             nextPageRef.current = pageToLoad + 1;
 
-            console.log(`[GalleryPageController] Loaded ${data.photos?.length || 0} photos from page ${pageToLoad}`);
             return data.photos || [];
         } catch (error) {
             console.error('[GalleryPageController] Failed to load more photos:', error);
@@ -71,8 +68,6 @@ export function GalleryPageController({ currentPage, itemsPerPage, totalPages }:
         if (hasLoadedMore && loadedPagesRef.current.length > 1) {
             // Get the highest page loaded
             const highestPage = Math.max(...loadedPagesRef.current);
-
-            console.log(`[GalleryPageController] Modal closed, loaded pages: ${loadedPagesRef.current.join(', ')}, navigating to page ${highestPage}`);
 
             // Read search params on-demand (avoids useSearchParams subscription)
             const params = new URLSearchParams(window.location.search);
