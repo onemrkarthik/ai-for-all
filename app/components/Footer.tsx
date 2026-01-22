@@ -65,7 +65,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <Link
-                                    href="/styles"
+                                    href={nav.styles.list()}
                                     style={{
                                         color: 'rgba(255, 255, 255, 0.85)',
                                         textDecoration: 'none',
@@ -77,7 +77,7 @@ export default function Footer() {
                             </li>
                             <li>
                                 <Link
-                                    href="/professionals"
+                                    href={nav.professionals.list()}
                                     style={{
                                         color: 'rgba(255, 255, 255, 0.85)',
                                         textDecoration: 'none',

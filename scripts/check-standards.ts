@@ -245,6 +245,16 @@ function checkFeatureReadmes(): Violation[] {
 function checkHardcodedValues(files: string[]): Violation[] {
   const violations: Violation[] = [];
   
+  // URLs that are legitimate and should not trigger warnings
+  const allowedUrlPatterns = [
+    /schema\.org/,           // JSON-LD structured data (required)
+    /xmlns/,                 // XML namespace declarations (in data URIs)
+    /unsplash\.com/,         // Unsplash CDN (external image service)
+    /images\.unsplash\.com/, // Unsplash CDN images
+    /example\.com/,          // Placeholder URLs
+    /w3\.org/,               // W3C standards URLs
+  ];
+  
   const hardcodedPatterns = [
     {
       pattern: /['"`]https?:\/\/(?!localhost)[^'"`]+['"`]/g,
@@ -279,13 +289,18 @@ function checkHardcodedValues(files: string[]): Violation[] {
       
       for (const { pattern, message } of hardcodedPatterns) {
         if (pattern.test(line)) {
-          violations.push({
-            file,
-            line: i + 1,
-            rule: 'no-hardcoded-values',
-            message,
-            severity: 'warning',
-          });
+          // Check if this is an allowed URL pattern
+          const isAllowed = allowedUrlPatterns.some(allowed => allowed.test(line));
+          
+          if (!isAllowed) {
+            violations.push({
+              file,
+              line: i + 1,
+              rule: 'no-hardcoded-values',
+              message,
+              severity: 'warning',
+            });
+          }
         }
         // Reset regex lastIndex
         pattern.lastIndex = 0;
@@ -322,8 +337,25 @@ function checkTypeSafety(files: string[]): Violation[] {
     const content = readFileContent(file);
     const lines = content.split('\n');
     
+    let inBlockComment = false;
+    
     for (let i = 0; i < lines.length; i++) {
       const line = lines[i];
+      const trimmedLine = line.trim();
+      
+      // Track block comments
+      if (trimmedLine.startsWith('/*') || trimmedLine.startsWith('/**')) {
+        inBlockComment = true;
+      }
+      if (trimmedLine.includes('*/')) {
+        inBlockComment = false;
+        continue; // Skip the closing line of block comments
+      }
+      
+      // Skip comments entirely
+      if (inBlockComment || trimmedLine.startsWith('//') || trimmedLine.startsWith('*')) {
+        continue;
+      }
       
       for (const { pattern, message } of patterns) {
         if (pattern.test(line)) {

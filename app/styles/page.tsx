@@ -8,6 +8,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { STYLE_GUIDES } from '@/lib/data/style-guides';
 import StyleCard from './StyleCard';
+import { nav } from '@/lib/navigation';
 
 export const metadata: Metadata = {
   title: 'Kitchen Design Styles | AI for All',
@@ -123,7 +124,7 @@ export default function StylesIndexPage() {
             find inspiration for your project.
           </p>
           <Link
-            href="/photos/kitchen-ideas-and-designs-phbr0-bp~t_709"
+            href={nav.photos.ideas()}
             style={{
               display: 'inline-block',
               background: 'var(--primary)',

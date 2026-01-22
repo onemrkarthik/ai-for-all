@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import Link from 'next/link';
+import { nav } from '@/lib/navigation';
 
 interface ProfessionalRowProps {
     id: number;
@@ -185,7 +186,7 @@ export default function ProfessionalRow({
                     <button
                         onClick={(e) => {
                             e.preventDefault();
-                            window.location.href = `/professionals/${id}#contact`;
+                            window.location.href = `${nav.professionals.detail(id)}#contact`;
                         }}
                         style={{
                             background: 'var(--primary)',

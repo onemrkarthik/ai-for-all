@@ -2,6 +2,7 @@ import { Metadata } from 'next';
 import Link from 'next/link';
 import { getAllProfessionals } from '@/lib/services/professionals';
 import ProfessionalsList from './ProfessionalsList';
+import { nav } from '@/lib/navigation';
 
 export const metadata: Metadata = {
     title: 'Find Kitchen Design Professionals | AI for All',
@@ -93,7 +94,7 @@ export default function ProfessionalsPage() {
                         then connect with a professional to make it happen.
                     </p>
                     <Link
-                        href="/photos/kitchen-ideas-and-designs-phbr0-bp~t_709"
+                        href={nav.photos.ideas()}
                         style={{
                             display: 'inline-block',
                             background: 'var(--primary)',

@@ -88,6 +88,14 @@ export const routes = {
    */
   professionals: {
     /**
+     * Professionals list page
+     * GET /professionals
+     */
+    list: {
+      path: '/professionals',
+    } satisfies Route,
+
+    /**
      * Professional detail page
      * GET /professionals/:id
      */
@@ -114,6 +122,14 @@ export const routes = {
    * Style Routes
    */
   styles: {
+    /**
+     * Styles list page
+     * GET /styles
+     */
+    list: {
+      path: '/styles',
+    } satisfies Route,
+
     /**
      * Style landing page
      * GET /styles/:style
@@ -173,6 +189,20 @@ export const nav = {
    */
   professionals: {
     /**
+     * Navigate to professionals list page
+     *
+     * @returns URL string
+     *
+     * @example
+     * ```ts
+     * nav.professionals.list()  // "/professionals"
+     * ```
+     */
+    list: (): string => {
+      return routes.professionals.list.path;
+    },
+
+    /**
      * Navigate to professional detail page
      *
      * @param id - Professional ID
@@ -213,6 +243,20 @@ export const nav = {
    * Style navigation
    */
   styles: {
+    /**
+     * Navigate to styles list page
+     *
+     * @returns URL string
+     *
+     * @example
+     * ```ts
+     * nav.styles.list()  // "/styles"
+     * ```
+     */
+    list: (): string => {
+      return routes.styles.list.path;
+    },
+
     /**
      * Navigate to style detail page
      *

@@ -2,6 +2,7 @@
 
 import Link from 'next/link';
 import { useState } from 'react';
+import { nav } from '@/lib/navigation';
 
 export function ProCTACard() {
     const [zipCode, setZipCode] = useState('');
@@ -94,7 +95,7 @@ export function ProCTACard() {
                     />
                 </div>
                 <Link
-                    href="/professionals"
+                    href={nav.professionals.list()}
                     style={{
                         background: '#4CAF50',
                         color: 'white',

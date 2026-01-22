@@ -11,6 +11,7 @@ import Link from 'next/link';
 import { getStyleGuide, isValidStyle, STYLE_SLUGS } from '@/lib/data/style-guides';
 import StyleContent from './StyleContent';
 import StyleGallery from './StyleGallery';
+import { nav } from '@/lib/navigation';
 
 interface PageProps {
   params: Promise<{ style: string }>;
@@ -85,7 +86,7 @@ export default async function StylePage({ params }: PageProps) {
             }}
           >
             <Link
-              href="/styles"
+              href={nav.styles.list()}
               style={{
                 color: 'var(--primary)',
                 textDecoration: 'none',
@@ -274,7 +275,7 @@ export default async function StylePage({ params }: PageProps) {
           Not sure if {guide.name.toLowerCase()} is right for you? Compare with other popular styles.
         </p>
         <Link
-          href="/styles"
+          href={nav.styles.list()}
           style={{
             display: 'inline-block',
             background: 'var(--primary)',
