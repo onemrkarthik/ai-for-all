@@ -5,10 +5,15 @@ const tsJestTransformCfg = createDefaultPreset().transform;
 
 /** @type {import("jest").Config} **/
 module.exports = {
-  testEnvironment: "node",
+  // Use jsdom for React component tests
+  testEnvironment: "jsdom",
+  
   transform: {
     ...tsJestTransformCfg,
   },
+  
+  // Setup files after environment
+  setupFilesAfterEnv: ["<rootDir>/tests/setup.tsx"],
   
   // Module path aliases (match tsconfig.json)
   moduleNameMapper: {
