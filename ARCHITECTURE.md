@@ -225,8 +225,8 @@ export const routes = {
     list: {
       path: '/api/feed',
       method: 'GET',
-      queryParams: {} as { offset?: number; limit?: number },
-      response: {} as PhotoGridItem[],
+      queryParams: {} as { offset?: number; limit?: number; filters?: PhotoFilters },
+      response: {} as FeedResponse,
     }
   },
 
@@ -258,9 +258,9 @@ Provides typed methods for all endpoints:
 ```typescript
 export const api = {
   feed: {
-    list: async (params?: { offset?: number; limit?: number }) => {
+    list: async (params?: { offset?: number; limit?: number; filters?: PhotoFilters }) => {
       const url = buildUrl(routes.feed.list, { queryParams: params });
-      return apiFetch<PhotoGridItem[]>(url);
+      return apiFetch<FeedResponse>(url);
     },
   },
 
@@ -306,6 +306,14 @@ const data = await api.contact.init({
   message
 });
 // ✅ Full type inference - data is typed as ContactInitResponse
+
+// With filters support:
+const feed = await api.feed.list({
+  offset: 0,
+  limit: 20,
+  filters: { style: 'Modern', layout: 'L-Shaped' }
+});
+// ✅ Filters are type-safe and automatically serialized
 ```
 
 ### Error Handling
@@ -353,7 +361,7 @@ try {
 
 | Domain | Method | Purpose |
 |--------|--------|---------|
-| `api.feed.list()` | GET | Get paginated photo list |
+| `api.feed.list({ filters })` | GET | Get paginated photo list with optional filters |
 | `api.photos.get(id)` | GET | Get photo details |
 | `api.professionals.get(id)` | GET | Get professional details |
 | `api.contact.latest(photoId)` | GET | Get latest conversation for photo |
@@ -456,6 +464,30 @@ export const nav = {
       });
     },
   },
+
+  photos: {
+    /**
+     * Navigate to photo ideas page
+     * @example
+     * nav.photos.ideas()  // "/photos/ideas"
+     */
+    ideas: (): string => {
+      return routes.photos.ideas.path;
+    },
+  },
+
+  styles: {
+    /**
+     * Navigate to style detail page
+     * @example
+     * nav.styles.detail('modern')  // "/styles/modern"
+     */
+    detail: (style: string): string => {
+      return buildRoute(routes.styles.detail.path, {
+        pathParams: { style },
+      });
+    },
+  },
 };
 ```
 
@@ -525,6 +557,8 @@ router.push(nav.home.index({ photo: photoId }));
 | Home | `nav.home.index()` | `"/"` |
 | Home with Photo Modal | `nav.home.index({ photo: 123 })` | `"/?photo=123"` |
 | Professional Detail | `nav.professionals.detail(5)` | `"/professionals/5"` |
+| Photo Ideas | `nav.photos.ideas()` | `"/photos/ideas"` |
+| Style Detail | `nav.styles.detail('modern')` | `"/styles/modern"` |
 
 ### Adding New Routes
 
@@ -2364,6 +2398,6 @@ For questions or contributions, please refer to the codebase or contact the deve
 
 ---
 
-**Last Updated:** 2026-01-08
-**Version:** 1.0.0
+**Last Updated:** 2026-01-22
+**Version:** 1.1.0
 **Maintained By:** Development Team

@@ -171,13 +171,22 @@ DATA       → lib/db/, lib/services/ (query functions)
 import { api } from '@/lib/api';
 const photo = await api.photos.get(123);  // Typed response
 const feed = await api.feed.list({ offset: 0, limit: 20 });
+
+// With filters support:
+const filtered = await api.feed.list({
+  offset: 0,
+  limit: 20,
+  filters: { style: 'Modern', layout: 'L-Shaped' }
+});
 ```
 
 **Navigation** - Use typed navigation helpers:
 ```typescript
 import { nav } from '@/lib/navigation';
-<Link href={nav.professionals.detail(5)} />  // "/professionals/5"
+<Link href={nav.professionals.detail(5)} />     // "/professionals/5"
 <Link href={nav.home.index({ photo: 123 })} />  // "/?photo=123"
+<Link href={nav.photos.ideas()} />              // "/photos/ideas"
+<Link href={nav.styles.detail('modern')} />     // "/styles/modern"
 ```
 
 ### Database

@@ -11,6 +11,7 @@ All database table definitions are centralized in `/lib/db/schema.ts`. This prov
 ```
 /lib/db/
 ├── schema.ts     # Table definitions
+├── types.ts      # TypeScript interfaces for database rows
 ├── index.ts      # Database connection and utilities
 └── README.md     # This file
 ```
@@ -234,6 +235,84 @@ const table: TableDefinition = {
   sql: 'CREATE TABLE...'
 };
 ```
+
+## Database Row Types (`types.ts`)
+
+The `types.ts` file provides TypeScript interfaces for all database query results. These types eliminate `as any` casts in the service layer and provide full type safety for database operations.
+
+### Available Types
+
+| Type | Purpose | Used In |
+|------|---------|---------|
+| `ProfessionalRow` | Basic professional record | `professionals.ts` |
+| `PhotoRow` | Basic photo record | `photos.ts` |
+| `PhotoWithProfessionalRow` | Photo with joined professional data | `photos.ts` |
+| `PhotoAttributeRow` | Photo attribute key-value pair | `photos.ts` |
+| `ReviewRow` | Professional review record | `professionals.ts` |
+| `RatingStatsRow` | Aggregated rating statistics | `professionals.ts` |
+| `CountRow` | Count query result | `photos.ts`, `chat.ts` |
+| `ConversationRow` | Chat conversation record | `chat.ts` |
+| `MessageRow` | Chat message record | `chat.ts` |
+| `NewMessagesCountRow` | Unread message count | `chat.ts` |
+| `ProfessionalPhotoRow` | Photo summary for professional | `professionals.ts` |
+| `ConversationWithNewMessageCountRow` | Conversation with unread count | `chat.ts` |
+
+### Usage Example
+
+```typescript
+import type { PhotoRow, PhotoAttributeRow } from '@/lib/db/types';
+
+// Type-safe query results
+const photo = db.prepare('SELECT * FROM photos WHERE id = ?').get(id) as PhotoRow | undefined;
+
+const attributes = db.prepare(
+  'SELECT * FROM photo_attributes WHERE photo_id = ?'
+).all(photoId) as PhotoAttributeRow[];
+```
+
+### Type Definitions
+
+```typescript
+// Basic row types
+export interface ProfessionalRow {
+  id: number;
+  name: string;
+  company: string;
+}
+
+export interface PhotoRow {
+  id: number;
+  title: string;
+  source: string;
+  image_url: string;
+  description?: string;
+}
+
+// Joined query types
+export interface PhotoWithProfessionalRow extends PhotoRow {
+  prof_id: number;
+  prof_name: string;
+  prof_company: string;
+}
+
+// Aggregate types
+export interface RatingStatsRow {
+  avg_rating: number | null;
+  review_count: number;
+}
+
+export interface CountRow {
+  count: number;
+}
+```
+
+### Benefits
+
+1. **Type Safety**: Eliminates `as any` casts throughout the codebase
+2. **IDE Support**: Full autocomplete for query result properties
+3. **Refactoring**: Rename fields safely with TypeScript support
+4. **Documentation**: Types serve as documentation for query shapes
+5. **Error Prevention**: Catch property access errors at compile time
 
 ## Troubleshooting
 
