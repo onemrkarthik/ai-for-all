@@ -58,7 +58,7 @@ npm run check:no-houzz   # Verify no Houzz/IVY ecosystem code is included
 
 # Git Hooks (auto-configured)
 # Pre-commit: Runs lint-staged (ESLint --fix on staged files)
-# Pre-push: Runs type-check and architecture tests
+# Pre-push: Runs type-check, standards check, and architecture tests
 
 # Full Setup (install + db init + hooks)
 npm run setup            # Run after cloning if npm install didn't auto-init
@@ -236,7 +236,7 @@ The pre-push hook runs type checking and architecture tests. If it fails:
 ### Git Hooks (Automatic)
 
 - **Pre-commit**: Runs ESLint with auto-fix on staged files
-- **Pre-push**: Runs TypeScript type-check and architecture tests
+- **Pre-push**: Runs TypeScript type-check, standards check, and architecture tests
 
 ### Adding New Features
 
